@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="copyright" content="Copyright (c) IBM Corporation and others 2011." >
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Orion Package Manager</title>
+	<link rel="stylesheet" type="text/css" href="opm.css" />
+	<script src="lib/MetaObject/requirejs/require.js"></script>
+	<script>
+	  /*globals require window*/
+	  require({
+	    paths: { 
+	      'MetaObject': 'lib/MetaObject'
+	      }
+	  });
+	  require(['opm'], function(opm) {
+	    opm.buildPage(window);
+	  });
+	</script>
+</head>
+<body>
+</body>
+</html>
