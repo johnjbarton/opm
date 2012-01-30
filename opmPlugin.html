@@ -3,7 +3,7 @@
 <head>
   <meta name="copyright" content="Copyright (c) Google 2011. Google BSD License" >
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <script src="lib/plugin.js"></script>
+  <script src="orion/plugin.js"></script>
   <script>
     /*globals window eclipse console*/
     var serviceImpl = {
@@ -12,12 +12,13 @@
     window.onload = function() {
       var provider = new eclipse.PluginProvider();
       provider.registerServiceProvider(
-        "orion.page.link",
+        "orion.pluginPlayer.media",
         serviceImpl,
         {
           name: "OrionPackageManager",
           id: "opm",
-          href: "http://localhost:8080/file/D/opm.html"
+          href: "http://localhost:8080/file/O/opm.html",
+          title: "Orion Package Manager"
         }
       );
       provider.connect(

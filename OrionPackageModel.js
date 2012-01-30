@@ -3,7 +3,7 @@
 
 /*global define console */
 
-define(['lib/plugin.js','MetaObject/MetaObject'], 
+define(['orion/plugin.js','MetaObject/MetaObject'], 
 function(        plugin,            MetaObject) {
 
 
