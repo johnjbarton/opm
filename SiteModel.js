@@ -6,25 +6,21 @@
 define(['orion/plugin.js','MetaObject/MetaObject'], 
 function(        plugin,            MetaObject) {
 
+  var ourSpecialSiteName = "opm";
 
-  var OrionPackageModel = MetaObject.extend({
+  var SiteModel = MetaObject.extend({
     initialize: function(jsonObj) {
       this.site = {};
       if (jsonObj) {
         jsonObj.SiteConfigurations.forEach(function(siteConfig) {
-          if (siteConfig.Name === 'opm') {
-            this.reconstitute(siteConfig);
+          if (siteConfig.Name === ourSpecialSiteName) {
+            this.site = siteConfig;
           }
-        });
+        }.bind(this));
       }
-    },
-    reconstitute: function(siteConfig) {
-      Object.keys(siteConfig).forEach(function(key) {
-        this.site[key] = siteConfig[key];
-      });
     }
   });
 
 
-  return OrionPackageModel;
+  return SiteModel;
 });

@@ -1,0 +1,19 @@
+body {
+    font-family:Verdana,Geneva,sans-serif;
+}
+
+#newPackageURL {
+  
+}
+
+
+.submitButton {
+  border: gray 2px solid;
+  padding-left: 3px;
+  padding-right: 3px;
+  color: gray;
+}
+
+.disabled {
+  display: none;
+}

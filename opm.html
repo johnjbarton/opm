@@ -6,11 +6,13 @@
 	<title>Orion Package Manager</title>
 	<link rel="stylesheet" type="text/css" href="opm.css" />
 	<script src="lib/MetaObject/requirejs/require.js"></script>
+	<script src="lib/MetaObject/requirejs/require-debug.js"></script>
 	<script>
 	  /*globals require window*/
 	  require({
 	    paths: { 
-	      'MetaObject': 'lib/MetaObject'
+	      'q':'lib/MetaObject/q',
+	      'MetaObject': 'lib/MetaObject',
 	      }
 	  });
 	  require(['opm'], function(opm) {
