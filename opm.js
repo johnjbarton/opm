@@ -3,8 +3,8 @@
 
 /*global define console */
 
-define(['MetaObject/AJAX','ProjectsModel', 'ProjectsView', 'q/q'], 
-function(           AJAX,  ProjectsModel,   ProjectsView,     Q) {
+define(['MetaObject/AJAX','ProjectsModel', 'ProjectsView', 'SiteModel', 'q/q'], 
+function(           AJAX,  ProjectsModel,   ProjectsView,   SiteModel,  Q) {
 
 
   var opm = {
@@ -28,19 +28,18 @@ function(           AJAX,  ProjectsModel,   ProjectsView,     Q) {
     
     ongitRepos: function(obj) {
       console.log("ongitRepos", obj);
-      // NO, this needs to build ReprosModel for the Add button and to fill in the Projects table cells
-      // ProjectModel needs to be built from 'opm' site entries as keys into the ReprosModel data
       this.projectsModel = ProjectsModel.new(obj);
     },
     
     onSites: function(obj) {
       console.log("onSites ", obj);
+      this.siteModel = SiteModel.new(obj);
       // need to return promise
     },
     
     render: function() {
       console.log("render");
-         var opView = ProjectsView.new(this.projectsModel);
+         var opView = ProjectsView.new(this.projectsModel, this.siteModel);
          opView.render();
     },
     
@@ -54,7 +53,7 @@ function(           AJAX,  ProjectsModel,   ProjectsView,     Q) {
     
     buildPage: function() {
       // If you accidently omit the [], you get an obscure error message
-      var all = Q.all([
+      Q.all([
         AJAX.promiseGET('/workspace').then(
           opm.on('Workspaces'), 
           opm.onError('workspace list')
@@ -63,12 +62,9 @@ function(           AJAX,  ProjectsModel,   ProjectsView,     Q) {
           opm.on('Sites'), 
           opm.onError('site list')
         )
-      ]);
-      
-      console.log("all done", all);
-      Q.when(all, function(all) {
-          opm.render();
-       }).end();
+      ]).then(
+        opm.render.bind(opm)
+      ).end();
     },
   };
   

@@ -9,10 +9,11 @@ function(MetaObject) {
 
   var ProjectsModel = MetaObject.extend({
     initialize: function(jsonObj) {
-      this.projects = [];
+      this.projects = {};
       if (jsonObj) {
         jsonObj.Children.forEach(function(project) {
-            this.projects.push(project);
+          var name = project.Id.split('/')[0];
+            this.projects[name] = project;
         }.bind(this));
       }
     }

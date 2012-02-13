@@ -18,6 +18,14 @@ function(        plugin,            MetaObject) {
           }
         }.bind(this));
       }
+    },
+    getManagedProjectNames: function() {
+      var mappings = this.site.Mappings;
+      var names = mappings.map(function(mapping) {
+        var name = mapping.Target.substr(1);
+        return name;
+      });
+      return names;
     }
   });
 

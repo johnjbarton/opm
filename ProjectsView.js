@@ -10,18 +10,42 @@ function(    Domplate,            MetaObject) {
 
   var ProjectsView = MetaObject.extend({
     
-    initialize: function(projectsModel) {
+    initialize: function(projectsModel, siteModel) {
       this.projectsModel = projectsModel;
+      this.siteModel = siteModel;
+    },
+    
+    getManagedProjects: function() {
+      var names = this.siteModel.getManagedProjectNames();
+      return names.map(function(name) {
+        return this.projectsModel.projects[name];
+      }.bind(this));
+    },
+    
+    getUnmanagedProjects: function() {
+      var names = this.siteModel.getManagedProjectNames();
+      var projectsByName = this.projectsModel.projects;
+      var unmanaged = [];
+      Object.keys(projectsByName).forEach(function(name) {
+        var project = projectsByName[name];
+        if (names.indexOf(project.Name) === -1) {
+          unmanaged.push(project);
+        }
+      });
+      return unmanaged;
     },
     
     render: function() {
-      this._renderDomplate(this.projectsModel);
+      this._renderDomplate(this.getManagedProjects(), this.getUnmanagedProjects());
     },
     
-    _renderDomplate: function(projectsModel) {
+    _renderDomplate: function(managed, unmanaged) {
       var body = window.document.body;
-      templates.overview.tag.replace({
-        object: projectsModel
+      templates.overview.tag.append({
+        object: managed
+      }, body);
+      templates.addMore.tag.append({
+        object:unmanaged
       }, body);
     }
   });
@@ -43,28 +67,29 @@ function(    Domplate,            MetaObject) {
           }
         });
     templates.overview = Domplate.domplate({
-          tag: DIV({'id':'opView','onkeydown': '$installIfEnter'},
+          tag: DIV({'id':'opView'},
             H1("Git Project Manager"),
-            TAG(templates.projects.tag, {projects: "$object|getProjects"}),
+            TAG(templates.projects.tag, {projects: "$object"})
+          ),
+        });
+    templates.addMore = Domplate.domplate({
+      tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter'},
             SPAN("HTTP Repository URL: "),
             INPUT({'id': 'newProjectURL', 'class':'inputURL','size': '80', 'type':'url', 'pattern':'http', 'value': ''}),
             SPAN({'class':'submitButton         ', 'title':'Clone this project', 'onclick':'$installProject'}, 'ok'),
             SPAN({'class':'submitButton disabled', 'title':'Cancel ', 'onclick':'$cancelInstallProject'}, 'X')
-          ),
-          getProjects: function(projectsModel) {
-            return projectsModel.projects;
-          },
-          installProject: function(event) {
-            console.log("install", event);
-          },
-          installIfEnter: function(event) {
-            if (event.which === 13) {
-              this.installProject(event);
-            }
-          },
-          cancelInstallProject: function(event) {
-          },
-        });
+      ),
+      installProject: function(event) {
+        console.log("install", event);
+      },
+      installIfEnter: function(event) {
+        if (event.which === 13) {
+          this.installProject(event);
+        }
+      },
+      cancelInstallProject: function(event) {
+      },
+    });
   }
 
 
