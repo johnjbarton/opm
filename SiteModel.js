@@ -26,7 +26,16 @@ function(        plugin,            MetaObject) {
         return name;
       });
       return names;
-    }
+    },
+    
+    addProject: function(gitRepoProject) {
+      var source = '/'+ gitRepoProject.Name;    // eg 'q' -> /q
+      var target = gitRepoProject.ContentLocation;
+      this.site.Mappings.push({Source: source, Target: target});
+      
+      debugger;
+    },
+    
   });
 
 

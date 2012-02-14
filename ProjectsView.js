@@ -45,7 +45,8 @@ function(    Domplate,            MetaObject) {
         object: managed
       }, body);
       templates.addMore.tag.append({
-        object:unmanaged
+        projects:unmanaged,
+        siteModel: this.siteModel
       }, body);
     }
   });
@@ -55,7 +56,7 @@ function(    Domplate,            MetaObject) {
     var templates = {};
     templates.projects = Domplate.domplate({
           tag: DIV({'id':'opProjects'},
-            H2("Projects"),
+            H2("Managed Projects"),
             FOR('project', '$projects', 
               DIV({'class': 'opmProject'},
                 SPAN({object: '$project'}, "$project|getName")
@@ -74,20 +75,35 @@ function(    Domplate,            MetaObject) {
         });
     templates.addMore = Domplate.domplate({
       tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter'},
-            SPAN("HTTP Repository URL: "),
-            INPUT({'id': 'newProjectURL', 'class':'inputURL','size': '80', 'type':'url', 'pattern':'http', 'value': ''}),
-            SPAN({'class':'submitButton         ', 'title':'Clone this project', 'onclick':'$installProject'}, 'ok'),
-            SPAN({'class':'submitButton disabled', 'title':'Cancel ', 'onclick':'$cancelInstallProject'}, 'X')
-      ),
-      installProject: function(event) {
-        console.log("install", event);
+           H2("Add Projects"),
+           FOR('project', '$projects', 
+              DIV({'class': 'opmProject unmanaged', _siteModel: '$siteModel'},
+                SPAN({'class':'arrow-box', 'onclick': '$addProject'},
+                  SPAN({'class':'arrow-up', 'title': "$project|getTooltip"})
+                ),
+                SPAN({'class': 'projectName', _repObject: '$project'}, "$project|getName")
+              )
+            )
+          ),
+      getName: function(project) {
+        return project.Name;
+      },
+      getTooltip: function(project) {
+        return "Add project\'"+project.Name + "\' to managed project";
+      },
+      addProject: function(event) {
+        var projectElement = event.target.parentElement.nextElementSibling;
+        var projectName = projectElement.innerText;
+        console.log("adding "+projectName);
+        var project = projectElement.repObject;
+        var siteElement = projectElement.parentElement;
+        var siteModel = siteElement.siteModel;
+        siteModel.addProject(project);
       },
       installIfEnter: function(event) {
         if (event.which === 13) {
           this.installProject(event);
         }
-      },
-      cancelInstallProject: function(event) {
       },
     });
   }
