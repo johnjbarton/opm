@@ -98,7 +98,14 @@ function(    Domplate,            MetaObject) {
         var project = projectElement.repObject;
         var siteElement = projectElement.parentElement;
         var siteModel = siteElement.siteModel;
-        siteModel.addProject(project);
+        siteModel.addProject(project).then(
+          function afterAddProject(event) {
+            debugger;
+          },
+          function errorAddProject(event) {
+            console.error(event);
+          }
+        );
       },
       installIfEnter: function(event) {
         if (event.which === 13) {

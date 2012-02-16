@@ -8,12 +8,13 @@ function(MetaObject) {
 
 
   var ProjectsModel = MetaObject.extend({
-    initialize: function(jsonObj) {
+    initialize: function(connection, jsonObj) {
+      this.connection = connection;
       this.projects = {};
       if (jsonObj) {
         jsonObj.Children.forEach(function(project) {
-          var name = project.Id.split('/')[0];
-            this.projects[name] = project;
+          var name = project.ContentLocation;
+          this.projects[name] = project;
         }.bind(this));
       }
     }

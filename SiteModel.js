@@ -3,13 +3,15 @@
 
 /*global define console */
 
-define(['orion/plugin.js','MetaObject/MetaObject'], 
-function(        plugin,            MetaObject) {
+define(['MetaObject/MetaObject', 'opm/Connection'], 
+function(           MetaObject,       connection) {
 
   var ourSpecialSiteName = "opm";
 
   var SiteModel = MetaObject.extend({
-    initialize: function(jsonObj) {
+  
+    initialize: function(connection, jsonObj) {
+      this.connection = connection;
       this.site = {};
       if (jsonObj) {
         jsonObj.SiteConfigurations.forEach(function(siteConfig) {
@@ -19,25 +21,30 @@ function(        plugin,            MetaObject) {
         }.bind(this));
       }
     },
+  
     getManagedProjectNames: function() {
       var mappings = this.site.Mappings;
       var names = mappings.map(function(mapping) {
-        var name = mapping.Target.substr(1);
+        var name = mapping.Target;
         return name;
       });
       return names;
     },
     
     addProject: function(gitRepoProject) {
-      var source = '/'+ gitRepoProject.Name;    // eg 'q' -> /q
       var target = gitRepoProject.ContentLocation;
-      this.site.Mappings.push({Source: source, Target: target});
-      
-      debugger;
+      var name = gitRepoProject.Name;
+      var source = '/'+ name;    // eg 'q' -> /q
+      this.site.Mappings.push({Source: source, Target: target, FriendlyPath: name});
+      return this.updateOrion();
     },
     
+    updateOrion: function() {
+      return this.connection.put('/site/'+this.site.Id, this.site);
+    }
+    
   });
-
+  
 
   return SiteModel;
 });
