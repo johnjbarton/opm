@@ -21,11 +21,12 @@ body {
 .arrow-box {
   margin-left: 2.4ex;
   position: relative;
-  left: -1.9ex;
+  left: -1ex;
+  cursor: default;
 }
 
-.arrow-up:hover {
-    background-color: green;
+.arrow-box:hover {
+    border: gray 1px solid;
 }
 
 /* http://css-tricks.com/snippets/css/css-triangle */

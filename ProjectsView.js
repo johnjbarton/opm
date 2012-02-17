@@ -78,8 +78,8 @@ function(    Domplate,            MetaObject) {
            H2("Add Projects"),
            FOR('project', '$projects', 
               DIV({'class': 'opmProject unmanaged', _siteModel: '$siteModel'},
-                SPAN({'class':'arrow-box', 'onclick': '$addProject'},
-                  SPAN({'class':'arrow-up', 'title': "$project|getTooltip"})
+                SPAN({'class':'arrow-box', 'onclick': '$addProject', 'title': "$project|getTooltip"},
+                  SPAN({'class':'unicode-arrow-up'}, '&#x25B2;')
                 ),
                 SPAN({'class': 'projectName', _repObject: '$project'}, "$project|getName")
               )
