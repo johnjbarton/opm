@@ -16,14 +16,14 @@ function(    Domplate,            MetaObject) {
     },
     
     getManagedProjects: function() {
-      var names = this.siteModel.getManagedProjectNames();
+      var names = this.siteModel.getManagedProjectLocations();
       return names.map(function(name) {
         return this.projectsModel.projects[name];
       }.bind(this));
     },
     
     getUnmanagedProjects: function() {
-      var locations = this.siteModel.getManagedProjectNames();
+      var locations = this.siteModel.getManagedProjectLocations();
       var projectsByName = this.projectsModel.projects;
       var unmanaged = [];
       Object.keys(projectsByName).forEach(function(location) {
@@ -54,18 +54,24 @@ function(    Domplate,            MetaObject) {
   with (Domplate.tags) {
 
     var templates = {};
+    templates.project = Domplate.domplate({
+      tag: DIV({'class': 'opmProject'},
+                SPAN({object: '$project'}, "$project|getName")
+           ),
+      getName: function(project) {
+            return project.Name;
+          }
+
+
+    });
+
     templates.projects = Domplate.domplate({
           tag: DIV({'id':'opProjects'},
             H2("Managed Projects"),
-            FOR('project', '$projects', 
-              DIV({'class': 'opmProject'},
-                SPAN({object: '$project'}, "$project|getName")
-              )
+            FOR('project', '$projects',
+              TAG(templates.project.tag, {project: '$project'})
             )
           ),
-          getName: function(project) {
-            return project.Name;
-          }
         });
     templates.overview = Domplate.domplate({
           tag: DIV({'id':'opView'},
@@ -89,7 +95,7 @@ function(    Domplate,            MetaObject) {
         return project.Name;
       },
       getTooltip: function(project) {
-        return "Add project\'"+project.Name + "\' to managed project";
+        return "Add project\'"+project.Name + "\' to managed projects";
       },
       addProject: function(event) {
         var projectElement = event.target.parentElement.nextElementSibling;
@@ -100,7 +106,9 @@ function(    Domplate,            MetaObject) {
         var siteModel = siteElement.siteModel;
         siteModel.addProject(project).then(
           function afterAddProject(event) {
-            debugger;
+            siteElement.classList.add('hidden');
+            var opProjects = document.querySelector('#opProjects');
+            templates.project.tag.append({project: project}, opProjects);
           },
           function errorAddProject(event) {
             console.error(event);

@@ -22,13 +22,13 @@ function(           MetaObject,       connection) {
       }
     },
   
-    getManagedProjectNames: function() {
+    getManagedProjectLocations: function() {
       var mappings = this.site.Mappings;
-      var names = mappings.map(function(mapping) {
-        var name = mapping.Target;
-        return name;
+      var locations = mappings.map(function(mapping) {
+        var location = mapping.Target;
+        return location;
       });
-      return names;
+      return locations;
     },
     
     addProject: function(gitRepoProject) {
