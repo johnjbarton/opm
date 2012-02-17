@@ -23,12 +23,12 @@ function(    Domplate,            MetaObject) {
     },
     
     getUnmanagedProjects: function() {
-      var names = this.siteModel.getManagedProjectNames();
+      var locations = this.siteModel.getManagedProjectNames();
       var projectsByName = this.projectsModel.projects;
       var unmanaged = [];
-      Object.keys(projectsByName).forEach(function(name) {
-        var project = projectsByName[name];
-        if (names.indexOf(project.Name) === -1) {
+      Object.keys(projectsByName).forEach(function(location) {
+        if (locations.indexOf(location) === -1) { // not managed
+          var project = projectsByName[location];
           unmanaged.push(project);
         }
       });
