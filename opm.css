@@ -1,5 +1,6 @@
 body {
     font-family:Verdana,Geneva,sans-serif;
+    background-color: #642D8B
 }
 
 
@@ -31,4 +32,45 @@ body {
 
 .arrow-box:hover {
     border: gray 1px solid;
+}
+
+#opProjects {
+  margin: 2em;
+}
+
+div.opmProjectHeader {
+  display: table-row;
+}
+.opmProjectHeader span {
+  display: table-cell;
+  padding: 4px;
+  font-style: italic;
+  text-align: center;  
+}
+/* http://colorschemedesigner.com/#4D21Tn6p-w0w0 */
+div.opmManagedProject:nth-child(odd) {
+  background-color: #9B61C5;
+}
+
+div.opmManagedProject:nth-child(even) {
+  background-color: #A67CC5;
+}
+
+div.opmManagedProject {
+  display: table-row;
+}
+.opmManagedProject span {
+  display: table-cell;
+  padding: 4px;
+  text-align: right;
+}
+div.opmProjectFooter {
+  display: table-row;
+}
+
+.opmProjectFooter span {
+  display: table-cell;
+  padding: 4px;
+  font-style: italic;
+  text-align: center;  
 }

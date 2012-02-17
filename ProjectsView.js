@@ -55,33 +55,62 @@ function(    Domplate,            MetaObject) {
 
     var templates = {};
     templates.project = Domplate.domplate({
-      tag: DIV({'class': 'opmProject'},
-                SPAN({object: '$project'}, "$project|getName")
+      tag: DIV({'class': 'opmProject opmManagedProject'},
+                SPAN({object: '$project'}, "$project|getName"),
+                SPAN("$project|getStatus"),
+               SPAN('Push'),
+               SPAN('Branch'),
+               SPAN('Merge'),
+               SPAN('Remote'),
+               SPAN('Pull'),
+                SPAN('&#x25BC;') // Unmanage
            ),
       getName: function(project) {
-            return project.Name;
-          }
-
+        return project.Name;
+      }, 
+      getStatus: function(project) {
+      },
 
     });
 
     templates.projects = Domplate.domplate({
           tag: DIV({'id':'opProjects'},
             H2("Managed Projects"),
+            DIV({'class':'opmProjectHeader'}, 
+               SPAN('Project'),
+               SPAN('git Status'),
+               SPAN('Push'),
+               SPAN('Branch'),
+               SPAN('Merge'),
+               SPAN('Remote'),
+               SPAN('Pull'),
+               SPAN('Unmanage')
+            ),               
             FOR('project', '$projects',
               TAG(templates.project.tag, {project: '$project'})
+            ),
+            DIV({'class':'opmProjectFooter'},
+              SPAN('Update All'),
+              SPAN({'id': 'gitStatusUpdateAll'}),
+              SPAN({'id': 'gitPushUpdateAll'}),
+              SPAN({'id': 'gitBranchUpdateAll'}),
+              SPAN({'id': 'gitMergeUpdateAll'}),
+              SPAN({'id': 'gitRemoteUpdateAll'}),
+              SPAN({'id': 'gitPullUpdateAll'})
             )
           ),
         });
+        
     templates.overview = Domplate.domplate({
           tag: DIV({'id':'opView'},
             H1("Git Project Manager"),
             TAG(templates.projects.tag, {projects: "$object"})
           ),
         });
+    // http://stackoverflow.com/questions/2701192/html-is-there-an-ascii-character-for-a-up-down-triangle-arrow
     templates.addMore = Domplate.domplate({
       tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter'},
-           H2("Add Projects"),
+           H2("Manage More Projects"),
            FOR('project', '$projects', 
               DIV({'class': 'opmProject unmanaged', _siteModel: '$siteModel'},
                 SPAN({'class':'arrow-box', 'onclick': '$addProject', 'title': "$project|getTooltip"},
