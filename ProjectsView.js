@@ -3,8 +3,8 @@
 
 /*global define console window */
 
-define(['lib/domplate/lib/domplate','MetaObject/MetaObject'], 
-function(    Domplate,            MetaObject) {
+define(['lib/domplate/lib/domplate','MetaObject/MetaObject','opm/Connection'], 
+function(                 Domplate,             MetaObject,      connection) {
 
 
 
@@ -54,21 +54,68 @@ function(    Domplate,            MetaObject) {
   with (Domplate.tags) {
 
     var templates = {};
+    
+    templates.column = Domplate.domplate({
+      getElementId: function(project) {
+        return this.getColumnName() + '_' + project.Name;
+      },
+      getName: function(project) {
+        return project.Name;
+      },
+      getCellContent: function(project) {
+        this.update(project);
+        return 'updating';
+      },
+      updateFailed: function(project, err) {
+        console.error("Update "+this.getColumnName()+" on "+project.Name+" FAILED "+err, err);
+        return err;
+      },
+    });
+    
+    templates.status = Domplate.domplate(templates.column, {
+      tag: SPAN({'id':'$project|getElementId', 'class':"$getColumnName"}, "$project|getCellContent"),
+      
+      getColumnName: function() {
+        return 'status';
+      },
+      
+      update: function(project) {
+        connection.getObject(project.StatusLocation, this.renderUpdate.bind(this, project), this.updateFailed.bind(this, project));
+      },
+      
+      symbolic: function(symbol, jsonObj, field) {
+        var length = jsonObj[field].length;
+        return (length ? symbol + length : ''); 
+      },
+      
+      renderUpdate: function(project, jsonObj) {
+        var status = "";
+        status += this.symbolic('+', jsonObj, 'Added');
+        status += this.symbolic('?', jsonObj, 'Changed');
+        status += this.symbolic('X', jsonObj, 'Conflicting');
+        status += this.symbolic('-', jsonObj, 'Missing');
+        status += this.symbolic('&Delta;', jsonObj, 'Modified');
+        if (!status) {
+         status = "up to date";
+        }
+        document.getElementById(this.getElementId(project)).innerHTML = status;
+      },
+
+    });
+    
     templates.project = Domplate.domplate({
       tag: DIV({'class': 'opmProject opmManagedProject'},
-                SPAN({object: '$project'}, "$project|getName"),
-                SPAN("$project|getStatus"),
-               SPAN('Push'),
-               SPAN('Branch'),
-               SPAN('Merge'),
-               SPAN('Remote'),
-               SPAN('Pull'),
-                SPAN('&#x25BC;') // Unmanage
+             SPAN({object: '$project'}, "$project|getName"),
+             TAG(templates.status.tag, {project: "$project"}),
+             SPAN('Push'),
+             SPAN('Branch'),
+             SPAN('Merge'),
+             SPAN('Remote'),
+             SPAN('Pull'),
+             SPAN('&#x25BC;') // Unmanage
            ),
       getName: function(project) {
         return project.Name;
-      }, 
-      getStatus: function(project) {
       },
 
     });
@@ -136,8 +183,8 @@ function(    Domplate,            MetaObject) {
         siteModel.addProject(project).then(
           function afterAddProject(event) {
             siteElement.classList.add('hidden');
-            var opProjects = document.querySelector('#opProjects');
-            templates.project.tag.append({project: project}, opProjects);
+            var footer = document.querySelector('.opmProjectFooter');
+            templates.project.tag.insertAfter({project: project}, footer.previousElementSibling);
           },
           function errorAddProject(event) {
             console.error(event);
