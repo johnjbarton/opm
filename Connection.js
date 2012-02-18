@@ -3,8 +3,8 @@
 
 /*global define console */
 
-define(['MetaObject/AJAX','ProjectsModel', 'ProjectsView', 'SiteModel', 'q/q'], 
-function(           AJAX,  ProjectsModel,   ProjectsView,   SiteModel,     Q) {
+define(['MetaObject/AJAX','ProjectsModel', 'SiteModel', 'q/q'], 
+function(           AJAX,  ProjectsModel,   SiteModel,     Q) {
 
 var Connection = {
 
@@ -24,7 +24,18 @@ var Connection = {
       console.error("Orion Package Manager ERROR during "+action+": "+event.target.url, event);
     }.bind(this);
   },
-
+  
+  getObject: function(path, fnOfObject, fnOfErr) {
+    AJAX.GET(path, function(event) {
+      try {
+        var jsonObj = JSON.parse(event.currentTarget.response);
+        fnOfObject(jsonObj);
+      } catch(exc) {
+        fnOfErr(exc);
+      }
+    }, fnOfErr);
+  },
+  
   get: function(path, method, errMessage) {
     method = method || path;
     errMessage = errMessage || path;
