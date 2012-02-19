@@ -59,10 +59,16 @@ div.opmManagedProject:nth-child(even) {
 div.opmManagedProject {
   display: table-row;
 }
+.projectData {
+  display: block;
+  text-align: center;
+}
+.projectName {
+  text-align: right;
+}
 .opmManagedProject span {
   display: table-cell;
   padding: 4px;
-  text-align: right;
 }
 div.opmProjectFooter {
   display: table-row;
@@ -73,4 +79,23 @@ div.opmProjectFooter {
   padding: 4px;
   font-style: italic;
   text-align: center;  
+}
+
+.columnLink[gitStatus='gitWarn'] {
+  color: #CFCB3A;  /* see scheme */
+}
+.columnLink[gitStatus='gitErr'] {
+  color: red;
+}
+.columnLink[gitStatus='gitOk'] {
+  color: #3B0F5A;  /* darkest from color scheme */
+}
+.columnLink {
+  display: table-cell;
+  padding: 4px;
+  text-align: center;
+}
+.columnLink:hover {
+  text-decoration: underline;
+  cursor: default;
 }

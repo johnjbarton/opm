@@ -70,13 +70,33 @@ function(                 Domplate,             MetaObject,      connection) {
         console.error("Update "+this.getColumnName()+" on "+project.Name+" FAILED "+err, err);
         return err;
       },
+      warn: 'gitWarn',
+      err: 'gitError',
+      ok:  'gitOk',
     });
     
     templates.status = Domplate.domplate(templates.column, {
-      tag: SPAN({'id':'$project|getElementId', 'class':"$getColumnName"}, "$project|getCellContent"),
+      tag: A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+              "$project|getCellContent"
+         ),
       
       getColumnName: function() {
         return 'status';
+      },
+      
+      getColumnAction: function(project) {
+        return  function(event) {
+          var gitapi = project.StatusLocation.indexOf('/gitapi/');
+          if (gitapi !== -1) {
+            // eg http://localhost:8080/git/git-status.html#/gitapi/status/file/E/
+            var statusURL = project.StatusLocation.substr(0, gitapi);
+            statusURL += '/git/git-status.html#';
+            statusURL += project.StatusLocation.substr(gitapi);
+            window.open(statusURL);
+          } else {
+            console.error("Malformed StatusLocation for "+project.Name, project);
+          }
+        }
       },
       
       update: function(project) {
@@ -88,24 +108,34 @@ function(                 Domplate,             MetaObject,      connection) {
         return (length ? symbol + length : ''); 
       },
       
+      setCodeIf: function(status, code) {
+        if(status) {
+          this.code = code;
+        }
+        return status;
+      },
+      
       renderUpdate: function(project, jsonObj) {
         var status = "";
-        status += this.symbolic('+', jsonObj, 'Added');
-        status += this.symbolic('?', jsonObj, 'Changed');
-        status += this.symbolic('X', jsonObj, 'Conflicting');
-        status += this.symbolic('-', jsonObj, 'Missing');
-        status += this.symbolic('&Delta;', jsonObj, 'Modified');
+        status += this.setCodeIf(this.symbolic('+', jsonObj, 'Added'), this.warn);
+        status += this.setCodeIf(this.symbolic('&Delta;', jsonObj, 'Modified'), this.warn);
+        status += this.setCodeIf(this.symbolic('?', jsonObj, 'Changed'), this.err);
+        status += this.setCodeIf(this.symbolic('X', jsonObj, 'Conflicting'), this.err);
+        status += this.setCodeIf(this.symbolic('-', jsonObj, 'Missing'), this.err);
         if (!status) {
-         status = "up to date";
+          status = "up to date";
+          this.setCodeIf("up to date", this.ok);
         }
-        document.getElementById(this.getElementId(project)).innerHTML = status;
+        var elt = document.getElementById(this.getElementId(project));
+        elt.innerHTML = status;
+        elt.setAttribute('gitStatus', this.code);
       },
 
     });
     
     templates.project = Domplate.domplate({
       tag: DIV({'class': 'opmProject opmManagedProject'},
-             SPAN({object: '$project'}, "$project|getName"),
+             SPAN({object: '$project', 'class':'projectName'}, "$project|getName"),
              TAG(templates.status.tag, {project: "$project"}),
              SPAN('Push'),
              SPAN('Branch'),
