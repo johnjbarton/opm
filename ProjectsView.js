@@ -56,6 +56,7 @@ function(                 Domplate,             MetaObject,      connection) {
     var templates = {};
     
     templates.column = Domplate.domplate({
+      
       getElementId: function(project) {
         return this.getColumnName() + '_' + project.Name;
       },
@@ -76,10 +77,10 @@ function(                 Domplate,             MetaObject,      connection) {
     });
     
     templates.status = Domplate.domplate(templates.column, {
+      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
       tag: A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
          ),
-      
       getColumnName: function() {
         return 'status';
       },
@@ -133,15 +134,118 @@ function(                 Domplate,             MetaObject,      connection) {
 
     });
     
+    templates.branch = Domplate.domplate(templates.column, {
+      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
+      tag: A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+              "$project|getCellContent"
+         ),
+      getColumnName: function() {
+        return 'branch';
+      },
+      
+      getColumnAction: function(project) {
+        return  function(event) {
+          alert("pop up a list of branches to checkout");
+        }
+      },
+      
+      update: function(project) {
+        connection.getObject(project.BranchLocation, this.renderUpdate.bind(this, project), this.updateFailed.bind(this, project));
+      },
+      
+      renderUpdate: function(project, jsonObj) {
+        var elt = document.getElementById(this.getElementId(project));
+        var branches = [];
+        jsonObj.Children.forEach(function(child) {
+          if (child.Current) {
+            elt.innerHTML = child.Name;
+          }
+          var remotes = child.RemoteLocation.map(function(remote){
+            var trackingBranch = remote.Children.map(function(remoteBranch) {
+              return (remoteBranch.Type === "RemoteTrackingBranch") ? remoteBranch.Name : "";
+            });
+            return {name: trackingBranch.join(" "), gitURL: remote.GitUrl};
+          });
+          branches.push({name: child.Name, selected: child.Current, remotes: remotes});
+        });
+        // build popup
+      },
+
+    });
+
+    templates.push = Domplate.domplate(templates.column, {
+      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
+      tag: DIV({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+             '&#x21a6;'
+         ),
+      getColumnName: function() {
+        return 'push';
+      },
+      getColumnAction: function(project) {
+        
+      },
+
+    });
+
+    templates.pull = Domplate.domplate(templates.column, {
+      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
+      tag: DIV({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+             '&#x21a4;'
+         ),
+      getColumnName: function() {
+        return 'pull';
+      },
+      getColumnAction: function(project) {
+        
+      },
+
+    });
+
+    templates.remote = Domplate.domplate(templates.column, {
+      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
+      tag: A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+              "$project|getCellContent"
+         ),
+      getColumnName: function() {
+        return 'remote';
+      },
+      
+      getColumnAction: function(project) {
+        return  function(event) {
+          alert("pop up a list of branches to checkout");
+        }
+      },
+      
+      update: function(project) {
+        connection.getObject(project.BranchLocation, this.renderUpdate.bind(this, project), this.updateFailed.bind(this, project));
+      },
+      
+      renderUpdate: function(project, jsonObj) {
+        var elt = document.getElementById(this.getElementId(project));
+        var branches = [];
+        jsonObj.Children.forEach(function(child) {
+          
+          child.RemoteLocation.some(function(remote){
+            return remote.Children.some(function(remoteBranch) {
+              if (remoteBranch.Type === "RemoteTrackingBranch") {
+                elt.innerHTML = remoteBranch.Name;
+                return true;
+              }
+            });
+          });
+        });
+      },
+
+    });
+
     templates.project = Domplate.domplate({
       tag: DIV({'class': 'opmProject opmManagedProject'},
              SPAN({object: '$project', 'class':'projectName'}, "$project|getName"),
+             TAG(templates.branch.tag, {project: "$project"}),
              TAG(templates.status.tag, {project: "$project"}),
-             SPAN('Push'),
-             SPAN('Branch'),
-             SPAN('Merge'),
-             SPAN('Remote'),
-             SPAN('Pull'),
+             TAG(templates.pull.tag, {project: "$project"}),
+             TAG(templates.push.tag, {project: "$project"}),
+             TAG(templates.remote.tag, {project: "$project"}),
              SPAN('&#x25BC;') // Unmanage
            ),
       getName: function(project) {
@@ -155,12 +259,11 @@ function(                 Domplate,             MetaObject,      connection) {
             H2("Managed Projects"),
             DIV({'class':'opmProjectHeader'}, 
                SPAN('Project'),
-               SPAN('git Status'),
-               SPAN('Push'),
                SPAN('Branch'),
-               SPAN('Merge'),
-               SPAN('Remote'),
+               SPAN('git Status'),
                SPAN('Pull'),
+               SPAN('Push'),
+               SPAN('Remote'),
                SPAN('Unmanage')
             ),               
             FOR('project', '$projects',
@@ -168,12 +271,11 @@ function(                 Domplate,             MetaObject,      connection) {
             ),
             DIV({'class':'opmProjectFooter'},
               SPAN('Update All'),
-              SPAN({'id': 'gitStatusUpdateAll'}),
-              SPAN({'id': 'gitPushUpdateAll'}),
               SPAN({'id': 'gitBranchUpdateAll'}),
-              SPAN({'id': 'gitMergeUpdateAll'}),
-              SPAN({'id': 'gitRemoteUpdateAll'}),
-              SPAN({'id': 'gitPullUpdateAll'})
+              SPAN({'id': 'gitStatusUpdateAll'}),
+              SPAN({'id': 'gitPullUpdateAll'}),
+              SPAN({'id': 'gitPushUpdateAll'}),
+              SPAN({'id': 'gitRemoteUpdateAll'})
             )
           ),
         });
