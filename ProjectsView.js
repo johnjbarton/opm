@@ -7,6 +7,16 @@ define(['lib/domplate/lib/domplate','MetaObject/MetaObject','opm/Connection'],
 function(                 Domplate,             MetaObject,      connection) {
 
 
+  function getAncestorByClassName(elt, className) {
+    var parent = elt.parentNode;
+    while(parent) {
+      if (parent.classList.contains(className)) {
+        return parent;
+      }
+      parent = parent.parentNode;
+    }
+  }
+
 
   var ProjectsView = MetaObject.extend({
     
@@ -134,6 +144,35 @@ function(                 Domplate,             MetaObject,      connection) {
 
     });
     
+    templates.branches = Domplate.domplate({
+      tag: DIV({'class':'overlay', 'onkeydown':"$project|getKeyDownAction"},
+        DIV({'class':'input' },
+          INPUT({'type':'checkbox', 'disabled':"disabled" }),
+          INPUT({'class':'newBranchName', 'type':'text'})
+        ),
+        FOR("branch", "$branches", 
+          INPUT({'type':'checkbox', 'checked':"$branch|getSelected" }),
+          SPAN("$branch|getBranchName")
+        )
+      ),
+      getBranchName: function(branch) {
+        return branch.name;
+      },
+      getSelected: function(branch) {
+        return (branch.selected ? 'checked' : 'false');
+      },
+      getKeyDownAction: function(event) {
+        return function(event) {
+          if (event.which === 13) {  // enter
+            console.log('branch adding needed ', event);
+          } else if (event.which === 27) {  // escape
+            var overlay = getAncestorByClassName(event.target, 'overlay');
+            overlay.parentElement.removeChild(overlay);
+          }
+        }
+      }
+    });
+    
     templates.branch = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
       tag: A({'id':'$project|getElementId', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
@@ -145,7 +184,15 @@ function(                 Domplate,             MetaObject,      connection) {
       
       getColumnAction: function(project) {
         return  function(event) {
-          alert("pop up a list of branches to checkout");
+          var elt = document.getElementById(this.getElementId(project));
+          var row = event.target.parentElement;
+          var branches = elt.branches;
+          if (branches) {
+            var overlay = templates.branches.tag.insertAfter({project: project, branches: branches}, row);
+            overlay.style.left = elt.offsetLeft + 'px';
+            overlay.style.top = (elt.offsetTop + elt.offsetHeight) +'px';
+            overlay.getElementsByClassName('newBranchName')[0].focus();
+          }
         }
       },
       
@@ -168,7 +215,7 @@ function(                 Domplate,             MetaObject,      connection) {
           });
           branches.push({name: child.Name, selected: child.Current, remotes: remotes});
         });
-        // build popup
+        elt.branches = branches;
       },
 
     });
@@ -275,7 +322,7 @@ function(                 Domplate,             MetaObject,      connection) {
     });
 
     templates.project = Domplate.domplate({
-      tag: DIV({'class': 'opmProject opmManagedProject'},
+      tag: DIV({'class': 'opmProject managedProject'},
              SPAN({_project: '$project', 'class':'projectName'}, "$project|getName"),
              TAG(templates.branch.tag, {project: "$project"}),
              TAG(templates.status.tag, {project: "$project"}),

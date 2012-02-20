@@ -49,25 +49,24 @@ div.opmProjectHeader {
   text-align: center;  
 }
 /* http://colorschemedesigner.com/#4D21Tn6p-w0w0 */
-div.opmManagedProject:nth-child(odd) {
+div.managedProject:nth-child(odd) {
   background-color: #9B61C5;
 }
 
-div.opmManagedProject:nth-child(even) {
+div.managedProject:nth-child(even) {
   background-color: #A67CC5;
 }
 
-div.opmManagedProject {
+div.managedProject {
   display: table-row;
+  position: relative; /* allows overlays */
 }
 .projectData {
   display: block;
   text-align: center;
 }
-.projectName {
+.managedProject .projectName {
   text-align: right;
-}
-.opmManagedProject span {
   display: table-cell;
   padding: 4px 6px 4px 6px;
 }
@@ -108,4 +107,20 @@ div.opmProjectFooter {
 }
 .columnButton:hover {
   border:  #642D8B 4px solid;
+}
+.overlay {
+  position: absolute;
+  z-index: 10;
+  background-color: #642D8B;
+  border: black 1px solid;
+}
+.overlay input {
+  border: 2px inset; /* specify defaults to avoid changes */
+  padding: 1px;
+  background-color: #642D8B;
+}
+.input .overlay {
+  border: none;
+  padding: 3px;  /* align wit input */ 
+  color: #3B0F5A;  /* darkest from color scheme */
 }
