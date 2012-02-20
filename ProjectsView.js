@@ -175,11 +175,14 @@ function(                 Domplate,             MetaObject,      connection) {
     
     templates.branch = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: A({'id':'$project|getElementId', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: A({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
          ),
       getColumnName: function() {
         return 'branch';
+      },
+      getTitle: function(project) {
+        return "Checkout or create branches";
       },
       
       getColumnAction: function(project) {
@@ -295,8 +298,10 @@ function(                 Domplate,             MetaObject,      connection) {
     });
     
     templates.unmanage = Domplate.domplate(templates.column, {
-      tag: SPAN({'id':'$project|getElementId',  'title':'$project|getTitle','class':'unmanage columnButton columnCell', 'onclick':"$project|getColumnAction" },'&#x25BC;'),
-            getColumnName: function() {
+      tag: SPAN({'id':'$project|getElementId',  'title':'$project|getTitle','class':'unmanage columnButton columnCell', 'onclick':"$project|getColumnAction" },
+        '&#x25BC;'),
+      
+      getColumnName: function() {
         return 'unmanage';
       },
 
@@ -321,9 +326,27 @@ function(                 Domplate,             MetaObject,      connection) {
       }
     });
 
+    templates.projectName = Domplate.domplate(templates.column, {
+      tag: SPAN({'id':'$project|getElementId', _project: '$project', 'class':'projectName columnLink',  'title':'$project|getTitle', 'onclick':"$project|getColumnAction" }, 
+        "$project|getName"),
+      getColumnName: function() {
+        return 'name'
+      },
+      getTitle: function() {
+        return "Open in Orion Navigator";
+      },
+      getColumnAction: function(project) {
+        return function(event) {
+          var splits = project.ContentLocation.split('/');
+          var url = splits.slice(0,3).join('/')+'/navigate/table.html#/'+splits.slice(3).join('/')+"?depth=1";
+          window.open(url);
+        }
+      }
+    });
+
     templates.project = Domplate.domplate({
       tag: DIV({'class': 'opmProject managedProject'},
-             SPAN({_project: '$project', 'class':'projectName'}, "$project|getName"),
+             TAG(templates.projectName.tag, {project: "$project"}),
              TAG(templates.branch.tag, {project: "$project"}),
              TAG(templates.status.tag, {project: "$project"}),
              TAG(templates.pull.tag, {project: "$project"}),
