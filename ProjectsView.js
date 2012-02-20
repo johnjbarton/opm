@@ -78,7 +78,7 @@ function(                 Domplate,             MetaObject,      connection) {
     
     templates.status = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: A({'id':'$project|getElementId', 'class':"columnLink columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
          ),
       getColumnName: function() {
@@ -136,7 +136,7 @@ function(                 Domplate,             MetaObject,      connection) {
     
     templates.branch = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: A({'id':'$project|getElementId', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
          ),
       getColumnName: function() {
@@ -174,29 +174,38 @@ function(                 Domplate,             MetaObject,      connection) {
     });
 
     templates.push = Domplate.domplate(templates.column, {
-      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: DIV({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: DIV({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnButton columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
              '&#x21a6;'
          ),
+      getTitle: function(project) {
+        return "Push "+project.Name+" to remote";
+      },
       getColumnName: function() {
         return 'push';
       },
       getColumnAction: function(project) {
-        
+        return function(event) {
+          alert("TODO");
+        }
       },
 
     });
 
     templates.pull = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: DIV({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: DIV({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnButton columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
              '&#x21a4;'
          ),
+      getTitle: function(project) {
+        return "Pull "+project.Name+" from remote";
+      },
       getColumnName: function() {
         return 'pull';
       },
       getColumnAction: function(project) {
-        
+        return function(event) {
+          alert("TODO");
+        }
       },
 
     });
@@ -212,7 +221,7 @@ function(                 Domplate,             MetaObject,      connection) {
       
       getColumnAction: function(project) {
         return  function(event) {
-          alert("pop up a list of branches to checkout");
+          alert("pop up a list of remotes?");
         }
       },
       
@@ -239,11 +248,15 @@ function(                 Domplate,             MetaObject,      connection) {
     });
     
     templates.unmanage = Domplate.domplate(templates.column, {
-      tag: SPAN({'id':'$project|getElementId', 'class':'unmanage', 'onclick':"$project|getColumnAction" },'&#x25BC;'),
+      tag: SPAN({'id':'$project|getElementId',  'title':'$project|getTitle','class':'unmanage columnButton columnCell', 'onclick':"$project|getColumnAction" },'&#x25BC;'),
             getColumnName: function() {
         return 'unmanage';
       },
 
+      getTitle: function(project) {
+        return "Remove "+project.Name+" from the projects managed list";
+      },
+      
       getColumnAction: function(project) {
         return function(event) {
           var unmanagedProjectElement = window.document.querySelector(".unmanaged");

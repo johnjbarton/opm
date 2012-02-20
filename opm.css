@@ -91,12 +91,21 @@ div.opmProjectFooter {
 .columnLink[gitStatus='gitOk'] {
   color: #3B0F5A;  /* darkest from color scheme */
 }
-.columnLink {
+.columnCell {
   display: table-cell;
   text-align: center;
+}
+.columnLink {
   padding: 4px 6px 4px 6px;
 }
 .columnLink:hover {
   text-decoration: underline;
   cursor: default;
+}
+.columnButton {
+  border: transparent 4px solid;
+  padding: 0 2px 0 2px;
+}
+.columnButton:hover {
+  border:  #642D8B 4px solid;
 }
