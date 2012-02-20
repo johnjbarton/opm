@@ -38,6 +38,19 @@ function(           MetaObject,       connection) {
       this.site.Mappings.push({Source: source, Target: target, FriendlyPath: name});
       return this.updateOrion();
     },
+
+    removeProject: function(gitRepoProject) {
+      var target = gitRepoProject.ContentLocation;
+      var name = gitRepoProject.Name;
+      var source = '/'+ name;    // eg 'q' -> /q
+      this.site.Mappings.some(function(mapping, index) {
+        if (target === mapping.Target) {
+          this.site.Mappings.splice(index, 1);
+          return true;
+        }
+      }.bind(this));
+      return this.updateOrion();
+    },
     
     updateOrion: function() {
       return this.connection.put('/site/'+this.site.Id, this.site);

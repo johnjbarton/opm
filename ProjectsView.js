@@ -42,10 +42,10 @@ function(                 Domplate,             MetaObject,      connection) {
     _renderDomplate: function(managed, unmanaged) {
       var body = window.document.body;
       templates.overview.tag.append({
-        object: managed
+        projects: managed,
       }, body);
       templates.addMore.tag.append({
-        projects:unmanaged,
+        projects: unmanaged,
         siteModel: this.siteModel
       }, body);
     }
@@ -237,16 +237,39 @@ function(                 Domplate,             MetaObject,      connection) {
       },
 
     });
+    
+    templates.unmanage = Domplate.domplate(templates.column, {
+      tag: SPAN({'id':'$project|getElementId', 'class':'unmanage', 'onclick':"$project|getColumnAction" },'&#x25BC;'),
+            getColumnName: function() {
+        return 'unmanage';
+      },
+
+      getColumnAction: function(project) {
+        return function(event) {
+          var unmanagedProjectElement = window.document.querySelector(".unmanaged");
+          var siteModel = unmanagedProjectElement.siteModel;
+          var row = event.target.parentElement;
+          siteModel.removeProject(project).then(
+            function() {
+              row.classList.add('hidden');
+              },
+            function() {
+              console.error("unmanage fails ", arguments);
+            }
+          ).end();
+        }
+      }
+    });
 
     templates.project = Domplate.domplate({
       tag: DIV({'class': 'opmProject opmManagedProject'},
-             SPAN({object: '$project', 'class':'projectName'}, "$project|getName"),
+             SPAN({_project: '$project', 'class':'projectName'}, "$project|getName"),
              TAG(templates.branch.tag, {project: "$project"}),
              TAG(templates.status.tag, {project: "$project"}),
              TAG(templates.pull.tag, {project: "$project"}),
              TAG(templates.push.tag, {project: "$project"}),
              TAG(templates.remote.tag, {project: "$project"}),
-             SPAN('&#x25BC;') // Unmanage
+             TAG(templates.unmanage.tag, {project: "$project"})
            ),
       getName: function(project) {
         return project.Name;
@@ -264,7 +287,7 @@ function(                 Domplate,             MetaObject,      connection) {
                SPAN('Pull'),
                SPAN('Push'),
                SPAN('Remote'),
-               SPAN('Unmanage')
+               SPAN('')
             ),               
             FOR('project', '$projects',
               TAG(templates.project.tag, {project: '$project'})
@@ -283,9 +306,10 @@ function(                 Domplate,             MetaObject,      connection) {
     templates.overview = Domplate.domplate({
           tag: DIV({'id':'opView'},
             H1("Git Project Manager"),
-            TAG(templates.projects.tag, {projects: "$object"})
+            TAG(templates.projects.tag, {projects: "$projects"})
           ),
         });
+        
     // http://stackoverflow.com/questions/2701192/html-is-there-an-ascii-character-for-a-up-down-triangle-arrow
     templates.addMore = Domplate.domplate({
       tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter'},
