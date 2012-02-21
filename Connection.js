@@ -6,6 +6,35 @@
 define(['MetaObject/AJAX','ProjectsModel', 'SiteModel', 'q/q'], 
 function(           AJAX,  ProjectsModel,   SiteModel,     Q) {
 
+
+function ajax(verb) {  
+  // close over verb, eg GET
+  return function() {
+    var args = Array.prototype.slice.call(arguments);
+    var errCallback = args.pop();
+    var successCallback = args.pop();
+    args.push(function(event) {
+      try {
+        var status = event.currentTarget.status;
+        if (status >= 200 && status < 300) {
+          var response = event.currentTarget.response;
+          var jsonObj = {};
+          if (response) {
+            jsonObj = JSON.parse(response);
+          }
+          successCallback.apply(null, [jsonObj]);
+        } else {
+          errCallback.apply(null, [new Error("AJAX failed " +event.currentTarget.status)]);
+        }
+      } catch(exc) {
+        errCallback.apply(null, [exc]);
+      }    
+    });
+    args.push(errCallback);
+    return AJAX[verb].apply(null, args); 
+  };
+}
+
 var Connection = {
 
   on: function(kind) {
@@ -25,16 +54,9 @@ var Connection = {
     }.bind(this);
   },
   
-  getObject: function(path, fnOfObject, fnOfErr) {
-    AJAX.GET(path, function(event) {
-      try {
-        var jsonObj = JSON.parse(event.currentTarget.response);
-        fnOfObject(jsonObj);
-      } catch(exc) {
-        fnOfErr(exc);
-      }
-    }, fnOfErr);
-  },
+  getObject: ajax('GET'),
+  putObject: ajax('PUT'),
+  postObject: ajax('POST'),
   
   get: function(path, method, errMessage) {
     method = method || path;

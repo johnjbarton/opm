@@ -161,15 +161,39 @@ function(                 Domplate,             MetaObject,      connection) {
       getSelected: function(branch) {
         return (branch.selected ? 'checked' : 'false');
       },
-      getKeyDownAction: function(event) {
+      getKeyDownAction: function(project) {
         return function(event) {
           if (event.which === 13) {  // enter
-            console.log('branch adding needed ', event);
+            var name = event.target.value;
+            if (name) {
+              connection.postObject(project.BranchLocation, {Name: name}, 
+                this.checkoutBranch.bind(this, project, name),
+                this.updateFailed.bind(this, project, name)
+              );
+              console.log('branch adding needed ', event);
+            } // else do nothing
           } else if (event.which === 27) {  // escape
             var overlay = getAncestorByClassName(event.target, 'overlay');
             overlay.parentElement.removeChild(overlay);
           }
         }
+      },
+      updateFailed: function(project, name, err) {
+        console.error("branch \'"+name+"\' creation failed "+err, (err?err.stack:"huh"));
+      },
+      checkoutBranch: function(project, name) {
+        connection.putObject(project.CloneLocation, {Branch: name}, 
+          templates.branch.update.bind(templates.branch, project), 
+          this.updateFailed.bind(this, project, name)
+        );          
+      },
+      
+      renderUpdate: function(project, branches, elt) {
+        var row = elt.parentElement;
+        var overlay = this.tag.insertAfter({project: project, branches: branches}, row);
+        overlay.style.left = elt.offsetLeft + 'px';
+        overlay.style.top = (elt.offsetTop + elt.offsetHeight) +'px';
+        overlay.getElementsByClassName('newBranchName')[0].focus();
       }
     });
     
@@ -188,13 +212,9 @@ function(                 Domplate,             MetaObject,      connection) {
       getColumnAction: function(project) {
         return  function(event) {
           var elt = document.getElementById(this.getElementId(project));
-          var row = event.target.parentElement;
           var branches = elt.branches;
           if (branches) {
-            var overlay = templates.branches.tag.insertAfter({project: project, branches: branches}, row);
-            overlay.style.left = elt.offsetLeft + 'px';
-            overlay.style.top = (elt.offsetTop + elt.offsetHeight) +'px';
-            overlay.getElementsByClassName('newBranchName')[0].focus();
+            templates.branches.renderUpdate(project, branches, elt);
           }
         }
       },
