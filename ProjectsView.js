@@ -151,8 +151,10 @@ function(                 Domplate,             MetaObject,      connection) {
           INPUT({'class':'newBranchName', 'type':'text'})
         ),
         FOR("branch", "$branches", 
-          INPUT({'type':'checkbox', 'checked':"$branch|getSelected" }),
-          SPAN("$branch|getBranchName")
+          DIV({'onclick':"$project|getClickAction"},
+            INPUT({'type':'checkbox', 'checked':"$branch|getSelected" }),
+            SPAN({'class':'branchName'}, "$branch|getBranchName")
+          )
         )
       ),
       getBranchName: function(branch) {
@@ -161,33 +163,44 @@ function(                 Domplate,             MetaObject,      connection) {
       getSelected: function(branch) {
         return (branch.selected ? 'checked' : 'false');
       },
+      getClickAction: function(project) {
+        return function(event) {
+          var elt = event.currentTarget;
+          var branchName = elt.getElementsByClassName('branchName')[0].textContent;
+          this.checkoutBranch(project, branchName);
+          this.closeOverlay(elt);
+        }.bind(this);
+      },
       getKeyDownAction: function(project) {
         return function(event) {
           if (event.which === 13) {  // enter
             var name = event.target.value;
             if (name) {
-              connection.postObject(project.BranchLocation, {Name: name}, 
+              var json = JSON.stringify({Name: name});
+              connection.postObject(project.BranchLocation, json, 
                 this.checkoutBranch.bind(this, project, name),
                 this.updateFailed.bind(this, project, name)
               );
               console.log('branch adding needed ', event);
             } // else do nothing
           } else if (event.which === 27) {  // escape
-            var overlay = getAncestorByClassName(event.target, 'overlay');
-            overlay.parentElement.removeChild(overlay);
+            this.closeOverlay(event.currentTarget);
           }
-        }
+        }.bind(this);
       },
       updateFailed: function(project, name, err) {
         console.error("branch \'"+name+"\' creation failed "+err, (err?err.stack:"huh"));
       },
       checkoutBranch: function(project, name) {
-        connection.putObject(project.CloneLocation, {Branch: name}, 
+        connection.putObject(project.Location, JSON.stringify({Branch: name}), 
           templates.branch.update.bind(templates.branch, project), 
           this.updateFailed.bind(this, project, name)
         );          
       },
-      
+      closeOverlay: function(childElt) {
+        var overlay = getAncestorByClassName(childElt, 'overlay');
+        overlay.parentElement.removeChild(overlay);
+      },
       renderUpdate: function(project, branches, elt) {
         var row = elt.parentElement;
         var overlay = this.tag.insertAfter({project: project, branches: branches}, row);
