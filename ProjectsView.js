@@ -17,7 +17,6 @@ function(                 Domplate,             MetaObject,      connection) {
     }
   }
 
-
   var ProjectsView = MetaObject.extend({
     
     initialize: function(projectsModel, siteModel) {
@@ -66,7 +65,6 @@ function(                 Domplate,             MetaObject,      connection) {
     var templates = {};
     
     templates.column = Domplate.domplate({
-      
       getElementId: function(project) {
         return this.getColumnName() + '_' + project.Name;
       },
@@ -81,6 +79,20 @@ function(                 Domplate,             MetaObject,      connection) {
         console.error("Update "+this.getColumnName()+" on "+project.Name+" FAILED "+err, err);
         return err;
       },
+
+      pollOrion: function(project, progress, complete, taskObj) {
+        if (taskObj.Running) {
+          progress.apply(this, [taskObj]);
+          window.setTimeout(function repoll(){
+            connection.getObject(taskObj.Location, 
+             this.pollOrion.bind(this, project, progress, complete),
+             this.updateFailed.bind(this, project) );
+          }.bind(this), 200);  
+        } else {
+          complete.apply(this, [taskObj]);
+        }
+      },
+
       warn: 'gitWarn',
       err: 'gitError',
       ok:  'gitOk',
@@ -176,8 +188,7 @@ function(                 Domplate,             MetaObject,      connection) {
           if (event.which === 13) {  // enter
             var name = event.target.value;
             if (name) {
-              var json = JSON.stringify({Name: name});
-              connection.postObject(project.BranchLocation, json, 
+              connection.postObject(project.BranchLocation, {Name: name}, 
                 this.checkoutBranch.bind(this, project, name),
                 this.updateFailed.bind(this, project, name)
               );
@@ -192,7 +203,7 @@ function(                 Domplate,             MetaObject,      connection) {
         console.error("branch \'"+name+"\' creation failed "+err, (err?err.stack:"huh"));
       },
       checkoutBranch: function(project, name) {
-        connection.putObject(project.Location, JSON.stringify({Branch: name}), 
+        connection.putObject(project.Location, {Branch: name}, 
           templates.branch.update.bind(templates.branch, project), 
           this.updateFailed.bind(this, project, name)
         );          
@@ -225,7 +236,7 @@ function(                 Domplate,             MetaObject,      connection) {
       getColumnAction: function(project) {
         return  function(event) {
           var elt = document.getElementById(this.getElementId(project));
-          var branches = elt.branches;
+          var branches = project.branches;
           if (branches) {
             templates.branches.renderUpdate(project, branches, elt);
           }
@@ -251,7 +262,7 @@ function(                 Domplate,             MetaObject,      connection) {
           });
           branches.push({name: child.Name, selected: child.Current, remotes: remotes});
         });
-        elt.branches = branches;
+        project.branches = branches;
       },
 
     });
@@ -287,9 +298,39 @@ function(                 Domplate,             MetaObject,      connection) {
       },
       getColumnAction: function(project) {
         return function(event) {
-          alert("TODO");
+          if (project.branches) {
+            project.branches.forEach(function(branch) {
+              if (branch.selected) {
+                 var remotes = branch.remotes;
+                 if (remotes && remotes.length === 1) {
+                   var pullURL = project.Location.replace('\/remote\/', '/remote/'+remotes[0].name+'/');
+                   connection.postObject(pullURL, {Pull: true},
+                     this.update.bind(this, project, event.currentTarget),
+                     this.updateFailed.bind(this, project)
+                   );
+                 }
+              }
+            }.bind(this));
+          }
         }
       },
+      update: function(project, elt, taskObj) {
+        var projectElt = getAncestorByClassName(elt, 'managedProject');
+        var projectWidth = projectElt.clientWidth +'px';
+        var busyElt = templates.task.tag.insertAfter({project:project, taskObj: taskObj}, projectElt.previousSibling);
+        busyElt.firstChild.style.width = projectWidth;
+
+        this.pollOrion(project, function progress(taskObj) {
+            busyElt.parentElement.removeChild(busyElt);
+            busyElt = templates.task.tag.insertAfter({project:project, taskObj: taskObj}, projectElt.previousSibling);
+            busyElt.firstChild.style.width = projectWidth;
+          }, function complete(taskObj) {
+            templates.project.tag.insertAfter({project: project}, projectElt);
+            projectElt.parentElement.removeChild(projectElt);
+            busyElt.parentElement.removeChild(busyElt);
+          }, taskObj
+        );
+      }
 
     });
 
@@ -418,6 +459,25 @@ function(                 Domplate,             MetaObject,      connection) {
             )
           ),
         });
+    
+    templates.task = Domplate.domplate({
+      // sits in project element spot
+      tag:DIV({'class': 'opmProject managedProject'},
+            DIV({'class': 'overlay taskBusy'},
+              TAG(templates.projectName.tag, {project: "$project"}),
+              SPAN({'class':'taskMessage'}, "$taskObj|getMessage")  // TODO cancel if canBeCancelled
+            )
+          ),
+      getName: function(project) {
+        return project.Name;
+      },
+      getMessage: function(taskObj) {
+        return taskObj.Message + taskObj.PercentComplete +"%";
+      }
+
+    });
+    
+
         
     templates.overview = Domplate.domplate({
           tag: DIV({'id':'opView'},

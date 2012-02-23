@@ -13,7 +13,12 @@ function ajax(verb) {
     var args = Array.prototype.slice.call(arguments);
     var errCallback = args.pop();
     var successCallback = args.pop();
-    args.push(function(event) {
+    if (args.length === 2) {
+      var obj = args.pop();
+      var json = JSON.stringify(obj);
+      args.push(json);
+    }
+    args.push(function jsonToObject(event) {
       try {
         var status = event.currentTarget.status;
         if (status >= 200 && status < 300) {

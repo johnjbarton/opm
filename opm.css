@@ -65,10 +65,19 @@ div.managedProject {
   display: block;
   text-align: center;
 }
-.managedProject .projectName {
+.projectName {
   text-align: right;
   display: table-cell;
   padding: 4px 6px 4px 6px;
+}
+.taskBusy .projectName {
+  text-align: right;
+  display: inline;
+  padding: 4px 6px 4px 6px;
+}
+.taskMessage {
+  text-align: center;
+  padding: 4px 6px 4px 10px;
 }
 div.opmProjectFooter {
   display: table-row;
@@ -113,6 +122,10 @@ div.opmProjectFooter {
   z-index: 10;
   background-color: #642D8B;
   border: black 1px solid;
+}
+.taskBusy {
+  border: none;
+  padding: 4px 6px 4px 6px;
 }
 .overlay input {
   border: 2px inset; /* specify defaults to avoid changes */
