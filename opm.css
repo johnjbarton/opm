@@ -65,11 +65,6 @@ div.managedProject {
   display: block;
   text-align: center;
 }
-.projectName {
-  text-align: right;
-  display: table-cell;
-  padding: 4px 6px 4px 6px;
-}
 .taskBusy .projectName {
   text-align: right;
   display: inline;
@@ -103,6 +98,11 @@ div.opmProjectFooter {
   display: table-cell;
   text-align: center;
 }
+
+.projectName {  /* after columnCell */
+  text-align: right;
+}
+
 .columnLink {
   padding: 4px 6px 4px 6px;
 }

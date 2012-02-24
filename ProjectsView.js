@@ -8,12 +8,12 @@ function(                 Domplate,             MetaObject,      connection) {
 
 
   function getAncestorByClassName(elt, className) {
-    var parent = elt.parentNode;
+    var parent = elt.parentElement;
     while(parent) {
       if (parent.classList.contains(className)) {
         return parent;
       }
-      parent = parent.parentNode;
+      parent = parent.parentElement;
     }
   }
 
@@ -64,20 +64,30 @@ function(                 Domplate,             MetaObject,      connection) {
 
     var templates = {};
     
-    templates.column = Domplate.domplate({
-      getElementId: function(project) {
-        return this.getColumnName() + '_' + project.Name;
+    templates.common = Domplate.domplate({
+    
+      getElement: function(project) {
+        if (project.element) {
+          if (project.element.parentNode) {
+            return project.element; 
+          }
+        }
+        var projectElements = document.querySelectorAll('.managedProject');
+        for (var i = 0; i < projectElements.length; i++) {
+          var projectElement = projectElements[i];
+          if (projectElement.project == project) {
+            return project.element = projectElement;
+          }
+        };
       },
+      
       getName: function(project) {
         return project.Name;
       },
+      
       getCellContent: function(project) {
         this.update(project);
         return 'updating';
-      },
-      updateFailed: function(project, err) {
-        console.error("Update "+this.getColumnName()+" on "+project.Name+" FAILED "+err, err);
-        return err;
       },
 
       pollOrion: function(project, progress, complete, taskObj) {
@@ -85,8 +95,8 @@ function(                 Domplate,             MetaObject,      connection) {
           progress.apply(this, [taskObj]);
           window.setTimeout(function repoll(){
             connection.getObject(taskObj.Location, 
-             this.pollOrion.bind(this, project, progress, complete),
-             this.updateFailed.bind(this, project) );
+            this.pollOrion.bind(this, project, progress, complete),
+            this.updateFailed.bind(this, project) );
           }.bind(this), 200);  
         } else {
           complete.apply(this, [taskObj]);
@@ -96,6 +106,18 @@ function(                 Domplate,             MetaObject,      connection) {
       warn: 'gitWarn',
       err: 'gitError',
       ok:  'gitOk',
+    });
+    
+    templates.column = Domplate.domplate(templates.common, {
+
+      getElementId: function(project) {
+        return this.getColumnName() + '_' + project.Name;
+      },
+      
+      updateFailed: function(project, err) {
+        console.error("Update "+this.getColumnName()+" on "+project.Name+" FAILED "+err, err.stack);
+        return err;
+      },
     });
     
     templates.status = Domplate.domplate(templates.column, {
@@ -156,11 +178,12 @@ function(                 Domplate,             MetaObject,      connection) {
 
     });
     
-    templates.branches = Domplate.domplate({
-      tag: DIV({'class':'overlay', 'onkeydown':"$project|getKeyDownAction"},
+    templates.branches = Domplate.domplate(templates.common, {
+      tag: DIV({'class':'overlay branches', 'onkeydown':"$project|getKeyDownAction"},
         DIV({'class':'input' },
           INPUT({'type':'checkbox', 'disabled':"disabled" }),
-          INPUT({'class':'newBranchName', 'type':'text'})
+          INPUT({'class':'newBranchName', 'type':'text'}),
+          SPAN({'class':'branchFrom'}, "set by selectStartPoint")
         ),
         FOR("branch", "$branches", 
           DIV({'onclick':"$project|getClickAction"},
@@ -172,9 +195,24 @@ function(                 Domplate,             MetaObject,      connection) {
       getBranchName: function(branch) {
         return branch.name;
       },
+      setStartPoint: function(project, branchName, countBackwards) {
+        var elt = this.getElement(project);
+        var branchFrom = document.querySelector('.branches').getElementsByClassName('branchFrom')[0];
+        var head = ' HEAD';
+        if (countBackwards) {
+           head += '&#126;'+countBackwards;
+        }
+        branchFrom.innerHTML = 'starting: '+ branchName + head;
+      },
       getSelected: function(branch) {
+        if (branch.selected) {
+          window.setTimeout( 
+            this.setStartPoint.bind(this, branch.project, branch.name, 0)
+          );
+        }
         return (branch.selected ? 'checked' : 'false');
       },
+      
       getClickAction: function(project) {
         return function(event) {
           var elt = event.currentTarget;
@@ -209,7 +247,11 @@ function(                 Domplate,             MetaObject,      connection) {
         );          
       },
       closeOverlay: function(childElt) {
-        var overlay = getAncestorByClassName(childElt, 'overlay');
+        if (childElt.classList.contains('overlay') ) {
+          var overlay = childElt;
+        } else {
+          var overlay = getAncestorByClassName(childElt, 'overlay');
+        }
         overlay.parentElement.removeChild(overlay);
       },
       renderUpdate: function(project, branches, elt) {
@@ -260,7 +302,7 @@ function(                 Domplate,             MetaObject,      connection) {
             });
             return {name: trackingBranch.join(" "), gitURL: remote.GitUrl};
           });
-          branches.push({name: child.Name, selected: child.Current, remotes: remotes});
+          branches.push({project: project, name: child.Name, selected: child.Current, remotes: remotes});
         });
         project.branches = branches;
       },
@@ -401,8 +443,12 @@ function(                 Domplate,             MetaObject,      connection) {
     });
 
     templates.projectName = Domplate.domplate(templates.column, {
-      tag: SPAN({'id':'$project|getElementId', _project: '$project', 'class':'projectName columnLink',  'title':'$project|getTitle', 'onclick':"$project|getColumnAction" }, 
-        "$project|getName"),
+      tag: SPAN({
+                  'id':'$project|getElementId', 
+                  'class':'projectName columnCell columnLink',  
+                  'title':'$project|getTitle', 
+                  'onclick':"$project|getColumnAction" 
+                }, "$project|getName"),
       getColumnName: function() {
         return 'name'
       },
@@ -419,7 +465,7 @@ function(                 Domplate,             MetaObject,      connection) {
     });
 
     templates.project = Domplate.domplate({
-      tag: DIV({'class': 'opmProject managedProject'},
+      tag: DIV({'class': 'opmProject managedProject',  _project: '$project'},
              TAG(templates.projectName.tag, {project: "$project"}),
              TAG(templates.branch.tag, {project: "$project"}),
              TAG(templates.status.tag, {project: "$project"}),
