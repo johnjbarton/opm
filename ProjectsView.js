@@ -120,11 +120,33 @@ function(                 Domplate,             MetaObject,      connection) {
       },
     });
     
+    templates.projectName = Domplate.domplate(templates.column, {
+      tag: SPAN({
+                  'id':'$project|getElementId', 
+                  'class':'projectName columnCell columnLink',  
+                  'title':'$project|getTitle', 
+                  'onclick':"$project|getColumnAction" 
+                }, "$project|getName"),
+      getColumnName: function() {
+        return 'name'
+      },
+      getTitle: function() {
+        return "Open in Orion Navigator";
+      },
+      getColumnAction: function(project) {
+        return function(event) {
+          var splits = project.ContentLocation.split('/');
+          var url = splits.slice(0,3).join('/')+'/navigate/table.html#/'+splits.slice(3).join('/')+"?depth=1";
+          window.open(url);
+        }
+      }
+    });
+
     templates.status = Domplate.domplate(templates.column, {
-      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
       tag: A({'id':'$project|getElementId', 'class':"columnLink columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
          ),
+
       getColumnName: function() {
         return 'status';
       },
@@ -179,22 +201,26 @@ function(                 Domplate,             MetaObject,      connection) {
     });
     
     templates.branches = Domplate.domplate(templates.common, {
-      tag: DIV({'class':'overlay branches', 'onkeydown':"$project|getKeyDownAction"},
-        DIV({'class':'input' },
-          INPUT({'type':'checkbox', 'disabled':"disabled" }),
-          INPUT({'class':'newBranchName', 'type':'text'}),
-          SPAN({'class':'branchFrom'}, "set by selectStartPoint")
-        ),
-        FOR("branch", "$branches", 
-          DIV({'onclick':"$project|getClickAction"},
-            INPUT({'type':'checkbox', 'checked':"$branch|getSelected" }),
-            SPAN({'class':'branchName'}, "$branch|getBranchName")
-          )
-        )
+      tag: DIV({'class': 'branches'},
+             DIV({'class':'branchesContainer', 'onkeydown':"$project|getKeyDownAction"},
+               FOR("branch", "$branches", 
+                 SPAN({'onclick':"$project|getClickAction"},
+                   INPUT({'type':'checkbox', 'checked':"$branch|getSelected" }),
+                   SPAN({'class':'branchName'}, "$branch|getBranchName")
+                 )
+              ),
+              DIV({'class':'input' },
+                 INPUT({'class':'newBranchName', 'type':'text'}),
+                 SPAN({'class':'branchFrom branchName branchStartPoint'}, "set by selectStartPoint")
+               ),
+             DIV({'class':'hint'}, "Click: checkout; arrows: change startpoint") 
+         )
       ),
+      
       getBranchName: function(branch) {
         return branch.name;
       },
+      
       setStartPoint: function(project, branchName, countBackwards) {
         var elt = this.getElement(project);
         var branchFrom = document.querySelector('.branches').getElementsByClassName('branchFrom')[0];
@@ -202,13 +228,16 @@ function(                 Domplate,             MetaObject,      connection) {
         if (countBackwards) {
            head += '&#126;'+countBackwards;
         }
-        branchFrom.innerHTML = 'starting: '+ branchName + head;
+        branchFrom.innerHTML = branchName + head;
       },
+      
       getSelected: function(branch) {
         if (branch.selected) {
+          branch.startPoint = "HEAD";  // default to HEAD on current branch
           window.setTimeout( 
             this.setStartPoint.bind(this, branch.project, branch.name, 0)
           );
+          branch.startPoint = "HEAD";  // default to HEAD on current branch
         }
         return (branch.selected ? 'checked' : 'false');
       },
@@ -221,6 +250,7 @@ function(                 Domplate,             MetaObject,      connection) {
           this.closeOverlay(elt);
         }.bind(this);
       },
+      
       getKeyDownAction: function(project) {
         return function(event) {
           if (event.which === 13) {  // enter
@@ -230,7 +260,6 @@ function(                 Domplate,             MetaObject,      connection) {
                 this.checkoutBranch.bind(this, project, name),
                 this.updateFailed.bind(this, project, name)
               );
-              console.log('branch adding needed ', event);
             } // else do nothing
           } else if (event.which === 27) {  // escape
             this.closeOverlay(event.currentTarget);
@@ -246,27 +275,32 @@ function(                 Domplate,             MetaObject,      connection) {
           this.updateFailed.bind(this, project, name)
         );          
       },
-      closeOverlay: function(childElt) {
-        if (childElt.classList.contains('overlay') ) {
+      closeOverlay: function(childElt) { 
+        if (childElt.classList.contains('branches') ) {
           var overlay = childElt;
         } else {
-          var overlay = getAncestorByClassName(childElt, 'overlay');
+          var overlay = getAncestorByClassName(childElt, 'branches');
         }
         overlay.parentElement.removeChild(overlay);
       },
       renderUpdate: function(project, branches, elt) {
         var row = elt.parentElement;
-        var overlay = this.tag.insertAfter({project: project, branches: branches}, row);
-        overlay.style.left = elt.offsetLeft + 'px';
-        overlay.style.top = (elt.offsetTop + elt.offsetHeight) +'px';
+        var overlay = this.tag.append({project: project, branches: branches}, row.parentElement);
+        // move the overlay on top of the current project
+        overlay.style.top = (elt.offsetTop) +'px';
+        // move the container over the project's current branch name
+        var branchName = row.getElementsByClassName('branchName')[0];
+        overlay.style.left = branchName.offsetLeft + 'px';
         overlay.getElementsByClassName('newBranchName')[0].focus();
       }
     });
     
     templates.branch = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: A({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
-              "$project|getCellContent"
+      tag: DIV({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
+             INPUT({'class':'checkboxSpacer', 'type':'checkbox', 'checked':'checked'}),
+             SPAN({'class':'branchName'}, "$project|getCellContent"),
+             INPUT({'class':'checkboxSpacer', 'type':'checkbox', 'checked':'checked'})
          ),
       getColumnName: function() {
         return 'branch';
@@ -291,10 +325,11 @@ function(                 Domplate,             MetaObject,      connection) {
       
       renderUpdate: function(project, jsonObj) {
         var elt = document.getElementById(this.getElementId(project));
+        var branchName = elt.getElementsByClassName('branchName')[0];
         var branches = [];
         jsonObj.Children.forEach(function(child) {
           if (child.Current) {
-            elt.innerHTML = child.Name;
+            branchName.innerHTML = child.Name;
           }
           var remotes = child.RemoteLocation.map(function(remote){
             var trackingBranch = remote.Children.map(function(remoteBranch) {
@@ -438,28 +473,6 @@ function(                 Domplate,             MetaObject,      connection) {
               console.error("unmanage fails ", arguments);
             }
           ).end();
-        }
-      }
-    });
-
-    templates.projectName = Domplate.domplate(templates.column, {
-      tag: SPAN({
-                  'id':'$project|getElementId', 
-                  'class':'projectName columnCell columnLink',  
-                  'title':'$project|getTitle', 
-                  'onclick':"$project|getColumnAction" 
-                }, "$project|getName"),
-      getColumnName: function() {
-        return 'name'
-      },
-      getTitle: function() {
-        return "Open in Orion Navigator";
-      },
-      getColumnAction: function(project) {
-        return function(event) {
-          var splits = project.ContentLocation.split('/');
-          var url = splits.slice(0,3).join('/')+'/navigate/table.html#/'+splits.slice(3).join('/')+"?depth=1";
-          window.open(url);
         }
       }
     });
