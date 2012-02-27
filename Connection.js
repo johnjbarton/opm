@@ -21,15 +21,15 @@ function ajax(verb) {
     args.push(function jsonToObject(event) {
       try {
         var status = event.currentTarget.status;
+        var response = event.currentTarget.response;
+        var jsonObj = {};
+        if (response) {
+          jsonObj = JSON.parse(response);
+        }
         if (status >= 200 && status < 300) {
-          var response = event.currentTarget.response;
-          var jsonObj = {};
-          if (response) {
-            jsonObj = JSON.parse(response);
-          }
           successCallback.apply(null, [jsonObj]);
         } else {
-          errCallback.apply(null, [new Error("AJAX failed " +event.currentTarget.status)]);
+          errCallback.apply(null, [status, jsonObj]);
         }
       } catch(exc) {
         errCallback.apply(null, [exc]);
