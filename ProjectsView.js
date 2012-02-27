@@ -220,13 +220,13 @@ function(                 Domplate,             MetaObject,      connection) {
              DIV({'class':'branchesContainer', 'onkeydown':"$project|getKeyDownAction"},
                FOR("branch", "$branches", 
                  SPAN({'onclick':"$project|getClickAction"},
-                   INPUT({'type':'checkbox', 'checked':"$branch|getSelected" }),
+                   INPUT({'type':'checkbox', 'checkMe':"$branch|getSelected" }),
                    SPAN({'class':'branchName'}, "$branch|getBranchName")
                  )
               ),
               DIV({'class':'input' },
                  INPUT({'class':'newBranchName', 'type':'text'}),
-                 SPAN({'class':'branchFrom branchName branchStartPoint'}, "set by selectStartPoint")
+                 SPAN({'class':'branchFrom branchName branchStartPoint'}, "set by setStartPoint")
                ),
              DIV({'class':'hint'}, "$project|getHint") 
          )
@@ -237,7 +237,6 @@ function(                 Domplate,             MetaObject,      connection) {
       },
       
       setStartPoint: function(project, branchName, countBackwards) {
-        var elt = this.getElement(project);
         var branchFrom = document.querySelector('.branches').getElementsByClassName('branchFrom')[0];
         var head = ' HEAD';
         if (countBackwards) {
@@ -246,15 +245,21 @@ function(                 Domplate,             MetaObject,      connection) {
         branchFrom.innerHTML = branchName + head;
       },
       
+      setSelectedCheckbox: function(branch) {
+        var selectedElement = document.querySelector('.branches').querySelector('[checkMe=\'true\']');
+        selectedElement.setAttribute('checked', 'checked');
+      },
+      
       getSelected: function(branch) {
         if (branch.selected) {
           branch.startPoint = "HEAD";  // default to HEAD on current branch
-          window.setTimeout( 
-            this.setStartPoint.bind(this, branch.project, branch.name, 0)
+          window.setTimeout( function() {
+              this.setStartPoint(branch.project, branch.name, 0);
+              this.setSelectedCheckbox(branch);
+            }.bind(this)
           );
-          branch.startPoint = "HEAD";  // default to HEAD on current branch
         }
-        return (branch.selected ? 'checked' : 'false');
+        return (branch.selected ? 'true' : 'false');
       },
       
       getClickAction: function(project) {
@@ -282,8 +287,11 @@ function(                 Domplate,             MetaObject,      connection) {
           }
         }.bind(this);
       },
-      updateFailed: function(project, name, err) {
-        console.error("branch \'"+name+"\' creation failed "+err, (err?err.stack:"huh"));
+      updateFailed: function(project, name, status, jsonObj) {
+        console.error("branch \'"+name+"\' creation failed "+status, status);
+        if (jsonObj.DetailedMessage) {
+          window.alert(jsonObj.DetailedMessage);
+        }
       },
       checkoutBranch: function(project, name) {
         connection.putObject(project.Location, {Branch: name}, 
