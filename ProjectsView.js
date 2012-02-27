@@ -16,6 +16,12 @@ function(                 Domplate,             MetaObject,      connection) {
       parent = parent.parentElement;
     }
   }
+  
+  function click(elt) {
+    var event = window.document.createEvent('MouseEvents');
+    event.initMouseEvent('click', true, true, window, 0,0,0,0,0, false, false, false, false, 0, null);
+    return elt.dispatchEvent(event);
+  }
 
   var ProjectsView = MetaObject.extend({
     
@@ -153,6 +159,15 @@ function(                 Domplate,             MetaObject,      connection) {
       
       getColumnAction: function(project) {
         return  function(event) {
+          var status = event.currentTarget.getAttribute('gitStatus');
+          if (project.onBranch.name === 'master' && status !== this.ok) {
+            if ( window.confirm("On branch master. Change branch before commit?") ) {
+              var row = event.currentTarget.parentElement;
+              var branchElt = row.getElementsByClassName('branch')[0];
+              click(branchElt);
+              return;
+            }
+          }
           var gitapi = project.StatusLocation.indexOf('/gitapi/');
           if (gitapi !== -1) {
             // eg http://localhost:8080/git/git-status.html#/gitapi/status/file/E/
@@ -213,7 +228,7 @@ function(                 Domplate,             MetaObject,      connection) {
                  INPUT({'class':'newBranchName', 'type':'text'}),
                  SPAN({'class':'branchFrom branchName branchStartPoint'}, "set by selectStartPoint")
                ),
-             DIV({'class':'hint'}, "Click: checkout; arrows: change startpoint") 
+             DIV({'class':'hint'}, "$project|getHint") 
          )
       ),
       
@@ -260,6 +275,7 @@ function(                 Domplate,             MetaObject,      connection) {
                 this.checkoutBranch.bind(this, project, name),
                 this.updateFailed.bind(this, project, name)
               );
+              this.closeOverlay(event.currentTarget);
             } // else do nothing
           } else if (event.which === 27) {  // escape
             this.closeOverlay(event.currentTarget);
@@ -292,7 +308,10 @@ function(                 Domplate,             MetaObject,      connection) {
         var branchName = row.getElementsByClassName('branchName')[0];
         overlay.style.left = branchName.offsetLeft + 'px';
         overlay.getElementsByClassName('newBranchName')[0].focus();
-      }
+      },
+      getHint: function () {
+        return "Click: checkout; arrows: change startpoint";
+      },
     });
     
     templates.branch = Domplate.domplate(templates.column, {
@@ -328,16 +347,18 @@ function(                 Domplate,             MetaObject,      connection) {
         var branchName = elt.getElementsByClassName('branchName')[0];
         var branches = [];
         jsonObj.Children.forEach(function(child) {
-          if (child.Current) {
-            branchName.innerHTML = child.Name;
-          }
           var remotes = child.RemoteLocation.map(function(remote){
             var trackingBranch = remote.Children.map(function(remoteBranch) {
               return (remoteBranch.Type === "RemoteTrackingBranch") ? remoteBranch.Name : "";
             });
             return {name: trackingBranch.join(" "), gitURL: remote.GitUrl};
           });
-          branches.push({project: project, name: child.Name, selected: child.Current, remotes: remotes});
+          var branch = {project: project, name: child.Name, selected: child.Current, remotes: remotes};
+          branches.push(branch);
+          if (child.Current) {
+            branchName.innerHTML = child.Name;
+            project.onBranch = branch;
+          }
         });
         project.branches = branches;
       },

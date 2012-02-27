@@ -173,7 +173,6 @@ div.opmProjectFooter {
 }
 .branches input:focus {
   border: 2px #CFCB3A inset; 
-  color: #CFCB3A;   
 }
 
 .hint:before {
