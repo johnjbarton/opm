@@ -181,3 +181,8 @@ div.opmProjectFooter {
 .hint {
   color:  #A67CC5;
 }
+
+.message {
+  padding: 20px;
+  color: #CFCB3A; 
+}

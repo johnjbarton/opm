@@ -23,6 +23,21 @@ function(                 Domplate,             MetaObject,      connection) {
     return elt.dispatchEvent(event);
   }
 
+  function grabClicks(thenClose) {
+    function closeThenRemove(event) {
+       thenClose.apply(null, [event.currentTarget]);  
+       window.document.removeEventListener('click', closeThenRemove, false);
+       window.document.removeEventListener('keydown', closeOnEscape, false);
+    }
+    function closeOnEscape(event) {
+      if (event.which === 27) {  // escape
+        closeThenRemove();
+      }
+    }
+    window.document.addEventListener('click', closeThenRemove, false);
+    window.document.addEventListener('keydown', closeOnEscape, false);
+  }
+
   var ProjectsView = MetaObject.extend({
     
     initialize: function(projectsModel, siteModel) {
@@ -112,6 +127,41 @@ function(                 Domplate,             MetaObject,      connection) {
       warn: 'gitWarn',
       err: 'gitError',
       ok:  'gitOk',
+    });
+    
+    templates.message = Domplate.domplate(templates.common, {
+      tag: 
+        DIV({'class':'overlay message', 'onclick':'$message|getClickAction'}, 
+          DIV({'class':'whileTrying'}, "$message|getOperation"),
+          DIV({'class':'serverMessage'}, "$message|getServerMessage"),
+          DIV({'class':'serverDetails'}, "$message|getServerDetails"),
+          DIV({'class':'centerButton'},
+             BUTTON({'class':'okButton'}, 'Ok')
+          )
+        ),
+      getOperation: function(msg) {
+        return msg.operation || '';
+      },
+      getServerMessage: function(msg) {
+        return msg.Message || msg;
+      },
+      getServerDetails: function(msg) {
+        return msg.DetailedMessage || '';
+      },
+      getCloser: function(overlay) {
+        return function() {
+          if (overlay.parentElement) {
+            overlay.parentElement.removeChild(overlay);
+          } // else not in the doc any longer
+        }
+      },
+      getClickAction: function() {
+        return function() {
+          var elt = document.querySelector('.message');
+          var closer = this.getCloser(elt);
+          closer.call();
+        }
+      }
     });
     
     templates.column = Domplate.domplate(templates.common, {
@@ -219,7 +269,7 @@ function(                 Domplate,             MetaObject,      connection) {
       tag: DIV({'class': 'branches'},
              DIV({'class':'branchesContainer', 'onkeydown':"$project|getKeyDownAction"},
                FOR("branch", "$branches", 
-                 SPAN({'onclick':"$project|getClickAction"},
+                 DIV({'onclick':"$project|getClickAction"},
                    INPUT({'type':'checkbox', 'checkMe':"$branch|getSelected" }),
                    SPAN({'class':'branchName'}, "$branch|getBranchName")
                  )
@@ -287,18 +337,24 @@ function(                 Domplate,             MetaObject,      connection) {
           }
         }.bind(this);
       },
+      
       updateFailed: function(project, name, status, jsonObj) {
-        console.error("branch \'"+name+"\' creation failed "+status, status);
-        if (jsonObj.DetailedMessage) {
-          window.alert(jsonObj.DetailedMessage);
-        }
+        console.error("branch \'"+name+"\' operation failed "+status, jsonObj);
+        jsonObj.operation = 'branch \''+name+'\' operation:';
+        var row = this.getElement(project);
+        var overlay = templates.message.tag.insertAfter({message: jsonObj}, row);
+        // move the overlay on below of the current project
+        overlay.style.top = (row.offsetTop + row.offsetHeight) +'px';
+        grabClicks(templates.message.getCloser(overlay));
       },
+      
       checkoutBranch: function(project, name) {
         connection.putObject(project.Location, {Branch: name}, 
           templates.branch.update.bind(templates.branch, project), 
           this.updateFailed.bind(this, project, name)
         );          
       },
+      
       closeOverlay: function(childElt) { 
         if (childElt.classList.contains('branches') ) {
           var overlay = childElt;
@@ -307,6 +363,7 @@ function(                 Domplate,             MetaObject,      connection) {
         }
         overlay.parentElement.removeChild(overlay);
       },
+      
       renderUpdate: function(project, branches, elt) {
         var row = elt.parentElement;
         var overlay = this.tag.append({project: project, branches: branches}, row.parentElement);
