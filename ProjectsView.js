@@ -25,13 +25,13 @@ function(                 Domplate,             MetaObject,      connection) {
 
   function grabClicks(thenClose) {
     function closeThenRemove(event) {
-       thenClose.apply(null, [event.currentTarget]);  
+       thenClose.apply(null, [event]);  
        window.document.removeEventListener('click', closeThenRemove, false);
        window.document.removeEventListener('keydown', closeOnEscape, false);
     }
     function closeOnEscape(event) {
       if (event.which === 27) {  // escape
-        closeThenRemove();
+        closeThenRemove(event);
       }
     }
     window.document.addEventListener('click', closeThenRemove, false);
@@ -338,7 +338,6 @@ function(                 Domplate,             MetaObject,      connection) {
           var elt = event.currentTarget;
           var branchName = elt.getElementsByClassName('branchName')[0].textContent;
           this.checkoutBranch(project, branchName);
-          this.closeOverlay(elt);
         }.bind(this);
       },
       
@@ -353,8 +352,6 @@ function(                 Domplate,             MetaObject,      connection) {
               );
               this.closeOverlay(event.currentTarget);
             } // else do nothing
-          } else if (event.which === 27) {  // escape
-            this.closeOverlay(event.currentTarget);
           }
         }.bind(this);
       },
@@ -394,6 +391,10 @@ function(                 Domplate,             MetaObject,      connection) {
         var branchName = row.getElementsByClassName('branchName')[0];
         overlay.style.left = branchName.offsetLeft + 'px';
         overlay.getElementsByClassName('newBranchName')[0].focus();
+        window.setTimeout( function() {
+          // after the overlay comes up, watch for closing signs
+          grabClicks(this.closeOverlay.bind(this, overlay));
+        }.bind(this));
       },
       getHint: function () {
         return "Click: checkout; arrows: change startpoint";
