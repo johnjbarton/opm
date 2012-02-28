@@ -37,7 +37,24 @@ function(                 Domplate,             MetaObject,      connection) {
     window.document.addEventListener('click', closeThenRemove, false);
     window.document.addEventListener('keydown', closeOnEscape, false);
   }
+  
+  var updateQueue = [];
+  var hasFocus = true;
+  window.addEventListener('focus', function() {
+    if (!hasFocus) {
+      hasFocus = true;
+      updateQueue.forEach(function(update) {
+        update();
+      });
+    }
+    document.title = 'focused';
+  });
 
+  window.addEventListener('blur', function() {
+    document.title = 'not focused';
+    hasFocus = false;
+  });
+  
   var ProjectsView = MetaObject.extend({
     
     initialize: function(projectsModel, siteModel) {
@@ -194,6 +211,8 @@ function(                 Domplate,             MetaObject,      connection) {
           var splits = project.ContentLocation.split('/');
           var url = splits.slice(0,3).join('/')+'/navigate/table.html#/'+splits.slice(3).join('/')+"?depth=1";
           window.open(url);
+          // When the user comes back to this tab, update this project view
+          updateQueue.push(templates.project.update.bind(templates.project, project));
         }
       }
     });
@@ -225,6 +244,8 @@ function(                 Domplate,             MetaObject,      connection) {
             statusURL += '/git/git-status.html#';
             statusURL += project.StatusLocation.substr(gitapi);
             window.open(statusURL);
+            // When the user comes back to this tab, update this project view
+            updateQueue.push(templates.project.update.bind(templates.project, project));
           } else {
             console.error("Malformed StatusLocation for "+project.Name, project);
           }
@@ -573,8 +594,15 @@ function(                 Domplate,             MetaObject,      connection) {
              TAG(templates.remote.tag, {project: "$project"}),
              TAG(templates.unmanage.tag, {project: "$project"})
            ),
+      
       getName: function(project) {
         return project.Name;
+      },
+      
+      update: function(project) {
+        var oldElt = templates.common.getElement(project);
+        this.tag.insertAfter({project: project}, oldElt);
+        oldElt.parentElement.removeChild(oldElt);
       },
 
     });
