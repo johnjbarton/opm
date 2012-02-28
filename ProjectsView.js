@@ -593,14 +593,6 @@ function(                 Domplate,             MetaObject,      connection) {
             ),               
             FOR('project', '$projects',
               TAG(templates.project.tag, {project: '$project'})
-            ),
-            DIV({'class':'opmProjectFooter'},
-              SPAN('Update All'),
-              SPAN({'id': 'gitBranchUpdateAll'}),
-              SPAN({'id': 'gitStatusUpdateAll'}),
-              SPAN({'id': 'gitPullUpdateAll'}),
-              SPAN({'id': 'gitPushUpdateAll'}),
-              SPAN({'id': 'gitRemoteUpdateAll'})
             )
           ),
         });
