@@ -47,11 +47,11 @@ function(                 Domplate,             MetaObject,      connection) {
         update();
       });
     }
-    document.title = 'focused';
+    document.title = 'grove';
   });
 
   window.addEventListener('blur', function() {
-    document.title = 'not focused';
+    document.title = 'grove: watching';
     hasFocus = false;
   });
   
