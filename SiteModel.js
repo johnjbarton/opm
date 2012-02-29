@@ -25,24 +25,28 @@ function(           MetaObject,       connection) {
     getManagedProjectNames: function() {
       var mappings = this.site.Mappings;
       var names = mappings.map(function(mapping) {
-        var name = mapping.Target.substr(1);  // /name -> name
+        var name = mapping.Source.substr(1);  // /name -> name
         return name;
       });
       return names;
     },
     
+    extractTarget: function(location) {
+      var file = location.indexOf('/file/');
+      var target = location.substring(file+5, location.length - 1);
+      return target;
+    },
+    
     addProject: function(gitRepoProject) {
       var name = gitRepoProject.Name;
       var source = '/'+ name;    // eg 'q' -> /q
-      var target = source;       // the project name is magical in Orion
-      this.site.Mappings.push({Source: source, Target: target, FriendlyPath: name});
+      var target = this.extractTarget(gitRepoProject.ContentLocation);
+      this.site.Mappings.push({Source: source, Target: target, FriendlyPath: source});
       return this.updateOrion();
     },
 
     removeProject: function(gitRepoProject) {
-      var name = gitRepoProject.Name;
-      var source = '/'+ name;    // eg 'q' -> /q
-      var target = source;
+      var target = this.extractTarget(gitRepoProject.ContentLocation);
       this.site.Mappings.some(function(mapping, index) {
         if (target === mapping.Target) {
           this.site.Mappings.splice(index, 1);
