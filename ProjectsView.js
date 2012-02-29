@@ -91,10 +91,7 @@ function(                 Domplate,             MetaObject,      connection) {
       templates.overview.tag.append({
         projects: managed,
       }, body);
-      templates.addMore.tag.append({
-        projects: unmanaged,
-        siteModel: this.siteModel
-      }, body);
+      templates.addMore.update(this);
     }
   });
 
@@ -576,6 +573,7 @@ function(                 Domplate,             MetaObject,      connection) {
           siteModel.removeProject(project).then(
             function() {
               row.classList.add('hidden');
+              templates.addMore.update();
               },
             function() {
               console.error("unmanage fails ", arguments);
@@ -654,7 +652,7 @@ function(                 Domplate,             MetaObject,      connection) {
         
     // http://stackoverflow.com/questions/2701192/html-is-there-an-ascii-character-for-a-up-down-triangle-arrow
     templates.addMore = Domplate.domplate({
-      tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter'},
+      tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter', _projectView: "$projectView"},
            H2("Manage More Projects"),
            FOR('project', '$projects', 
               DIV({'class': 'opmProject unmanaged', _siteModel: '$siteModel'},
@@ -665,12 +663,15 @@ function(                 Domplate,             MetaObject,      connection) {
               )
             )
           ),
+          
       getName: function(project) {
         return project.Name;
       },
+      
       getTooltip: function(project) {
         return "Add project\'"+project.Name + "\' to managed projects";
       },
+      
       addProject: function(event) {
         var projectElement = event.target.parentElement.nextElementSibling;
         var projectName = projectElement.innerText;
@@ -689,14 +690,30 @@ function(                 Domplate,             MetaObject,      connection) {
           }
         );
       },
+      
       installIfEnter: function(event) {
         if (event.which === 13) {
           this.installProject(event);
         }
       },
-    });
-  }
+      
+      update: function(projectView) {
+        var addMore = window.document.querySelector('#addMore');
+        if (addMore) {
+          if (!projectView) {
+            projectView = addMore.projectView;
+          }
+          addMore.parentElement.removeChild(addMore);
+        }
+        this.tag.append({
+          projectView: projectView,
+          projects: projectView.getUnmanagedProjects(),
+          siteModel: projectView.siteModel
+        },  window.document.body );
 
+      }
+  });
+}
 
   return ProjectsView;
 });
