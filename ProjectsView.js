@@ -63,19 +63,19 @@ function(                 Domplate,             MetaObject,      connection) {
     },
     
     getManagedProjects: function() {
-      var names = this.siteModel.getManagedProjectLocations();
+      var names = this.siteModel.getManagedProjectNames();
       return names.map(function(name) {
         return this.projectsModel.projects[name];
       }.bind(this));
     },
     
     getUnmanagedProjects: function() {
-      var locations = this.siteModel.getManagedProjectLocations();
+      var names = this.siteModel.getManagedProjectNames();
       var projectsByName = this.projectsModel.projects;
       var unmanaged = [];
-      Object.keys(projectsByName).forEach(function(location) {
-        if (locations.indexOf(location) === -1) { // not managed
-          var project = projectsByName[location];
+      Object.keys(projectsByName).forEach(function(name) {
+        if (names.indexOf(name) === -1) { // not managed
+          var project = projectsByName[name];
           unmanaged.push(project);
         }
       });
@@ -681,8 +681,8 @@ function(                 Domplate,             MetaObject,      connection) {
         siteModel.addProject(project).then(
           function afterAddProject(event) {
             siteElement.classList.add('hidden');
-            var footer = document.querySelector('.opmProjectFooter');
-            templates.project.tag.insertAfter({project: project}, footer.previousElementSibling);
+            var projects = document.querySelector('#opProjects');
+            templates.project.tag.append({project: project}, projects);
           },
           function errorAddProject(event) {
             console.error(event);

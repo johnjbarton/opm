@@ -22,27 +22,27 @@ function(           MetaObject,       connection) {
       }
     },
   
-    getManagedProjectLocations: function() {
+    getManagedProjectNames: function() {
       var mappings = this.site.Mappings;
-      var locations = mappings.map(function(mapping) {
-        var location = mapping.Target;
-        return location;
+      var names = mappings.map(function(mapping) {
+        var name = mapping.Target.substr(1);  // /name -> name
+        return name;
       });
-      return locations;
+      return names;
     },
     
     addProject: function(gitRepoProject) {
-      var target = gitRepoProject.ContentLocation;
       var name = gitRepoProject.Name;
       var source = '/'+ name;    // eg 'q' -> /q
+      var target = source;       // the project name is magical in Orion
       this.site.Mappings.push({Source: source, Target: target, FriendlyPath: name});
       return this.updateOrion();
     },
 
     removeProject: function(gitRepoProject) {
-      var target = gitRepoProject.ContentLocation;
       var name = gitRepoProject.Name;
       var source = '/'+ name;    // eg 'q' -> /q
+      var target = source;
       this.site.Mappings.some(function(mapping, index) {
         if (target === mapping.Target) {
           this.site.Mappings.splice(index, 1);

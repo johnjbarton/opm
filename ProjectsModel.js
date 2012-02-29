@@ -13,7 +13,7 @@ function(MetaObject) {
       this.projects = {};
       if (jsonObj) {
         jsonObj.Children.forEach(function(project) {
-          var name = project.ContentLocation;
+          var name = project.Name;
           this.projects[name] = project;
         }.bind(this));
       }
