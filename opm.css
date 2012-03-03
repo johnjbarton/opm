@@ -1,6 +1,7 @@
 body {
     font-family:Verdana,Geneva,sans-serif;
-    background-color: #642D8B
+    background-color: #839680;
+    color: #472E2E /* a dark brown */
 }
 
 
@@ -48,13 +49,13 @@ div.opmProjectHeader {
   font-style: italic;
   text-align: center;  
 }
-/* http://colorschemedesigner.com/#4D21Tn6p-w0w0 */
+
 div.managedProject:nth-child(odd) {
-  background-color: #9B61C5;
+  background-color: #D5FFCE;
 }
 
 div.managedProject:nth-child(even) {
-  background-color: #A67CC5;
+  background-color: #C7FFBE;
 }
 
 div.managedProject {
@@ -86,13 +87,13 @@ div.opmProjectFooter {
 }
 
 .columnLink[gitStatus='gitWarn'] {
-  color: #CFCB3A;  /* see scheme */
+  color: #9500FF; 
 }
 .columnLink[gitStatus='gitErr'] {
   color: red;
 }
 .columnLink[gitStatus='gitOk'] {
-  color: #3B0F5A;  /* darkest from color scheme */
+  color: #7A7A7A;  
 }
 .columnCell {
   display: table-cell;
@@ -115,12 +116,12 @@ div.opmProjectFooter {
   padding: 0 2px 0 2px;
 }
 .columnButton:hover {
-  border:  #642D8B 4px solid;
+  border:  #70C462 4px solid;
 }
 .overlay {
   position: absolute;
   z-index: 10;
-  background-color: #642D8B;
+  background-color: #70C462;
   border: gray 1px solid;
 }
 .taskBusy {
@@ -130,12 +131,11 @@ div.opmProjectFooter {
 .overlay input {
   border: 2px #A67CC5 inset; 
   padding: 1px;
-  background-color: #642D8B;
+  background-color: #70C462;
 }
 .input .overlay {
   border: none;
   padding: 3px;  /* align with input */ 
-  color: #3B0F5A;  /* darkest from color scheme */
 }
 
 .branch {
@@ -153,38 +153,41 @@ div.opmProjectFooter {
 }
 .branchFrom:before {
   content: 'new branch from: ';
-  color:  #A67CC5;
 }
 .branches {
   z-index: 10;
-  background-color: #642D8B;
+  background-color: #70C462;
   border: gray 1px solid;
   position: absolute;
 }
 .branchesContainer {
-  background-color: #642D8B;
+  background-color: #70C462;
   padding: 4px;
 }
 .branches .branchName {
   border: 1px solid transparent;   
 }
 .branches .branchStartPoint {
-  color: #CFCB3A; 
+  color: #7A7A7A;
+}
+.branches input {
+  background-color: #70C462;
 }
 .branches input:focus {
-  border: 2px #CFCB3A inset; 
+  border: 2px  #7A7A7A inset;
+  color: #7A7A7A;
+  outline-color: #D5FFCE; /* lighter of the n-th child colors */
 }
 
 .hint:before {
   content: 'hint ';
 }
 .hint {
-  color:  #A67CC5;
+  color:  #7A7A7A;
 }
 
 .message {
   padding: 20px;
-  color: #CFCB3A;
   border: 5px gray solid;
   border-radius: 15px;
 }

@@ -235,8 +235,10 @@ function(                 Domplate,             MetaObject,      connection) {
     templates.blockMasterCommit = Domplate.domplate(templates.message, {
        messageTag: DIV({'class':'blockMasterCommitMessage'}, 
              DIV({'class':'question'}, "$message.message"),
-             A({'class':'alternative columnLink', 'onclick':'$message.alternative.action' }, 
-               "$message.alternative.message"
+             DIV({'class':'alternative  centerButton'},
+               BUTTON({'class':'alternative okButton', 'onclick':'$message.alternative.action' }, 
+                 "$message.alternative.message"
+               )
              )
            ),
       getMessageTag: function() {
@@ -612,8 +614,14 @@ function(                 Domplate,             MetaObject,      connection) {
     });
     
     templates.unmanage = Domplate.domplate(templates.column, {
-      tag: SPAN({'id':'$project|getElementId',  'title':'$project|getTitle','class':'unmanage columnButton columnCell', 'onclick':"$project|getColumnAction" },
-        '&#x25BC;'),
+      tag: SPAN(
+          {
+            'id':'$project|getElementId',  
+            'title':'$project|getTitle',
+            'class':'unmanage columnButton columnCell', 
+            'onclick':"$project|getColumnAction" 
+          },
+          '&#x21a7;'),  //http://en.wikipedia.org/wiki/Arrow_(symbol)
       
       getColumnName: function() {
         return 'unmanage';
@@ -708,14 +716,13 @@ function(                 Domplate,             MetaObject,      connection) {
           ),
         });
         
-    // http://stackoverflow.com/questions/2701192/html-is-there-an-ascii-character-for-a-up-down-triangle-arrow
     templates.addMore = Domplate.domplate({
       tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter', _projectView: "$projectView"},
            H2("Manage More Projects"),
            FOR('project', '$projects', 
               DIV({'class': 'opmProject unmanaged', _siteModel: '$siteModel'},
                 SPAN({'class':'arrow-box', 'onclick': '$addProject', 'title': "$project|getTooltip"},
-                  SPAN({'class':'unicode-arrow-up'}, '&#x25B2;')
+                  SPAN({'class':'unicode-arrow-up-from-bar'}, '&#x21a5;')
                 ),
                 SPAN({'class': 'projectName', _repObject: '$project'}, "$project|getName")
               )
