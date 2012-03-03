@@ -184,5 +184,16 @@ div.opmProjectFooter {
 
 .message {
   padding: 20px;
-  color: #CFCB3A; 
+  color: #CFCB3A;
+  border: 5px gray solid;
+  border-radius: 15px;
+}
+.centerButton {
+  text-align: center;
+  margin-top: 10px;
+}
+.okButton {
+  padding: 10px; /*bigger button to hit*/
+  display: table-cell; /* centering like text */
+  border-radius: 5px;
 }

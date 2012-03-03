@@ -47,11 +47,11 @@ function(                 Domplate,             MetaObject,      connection) {
         update();
       });
     }
-    document.title = 'grove';
+    document.title = 'orchard';
   });
 
   window.addEventListener('blur', function() {
-    document.title = 'grove: watching';
+    document.title = 'orchard: watching';
     hasFocus = false;
   });
   
@@ -92,7 +92,8 @@ function(                 Domplate,             MetaObject,      connection) {
         projects: managed,
       }, body);
       templates.addMore.update(this);
-    }
+    },
+    
   });
 
   with (Domplate.tags) {
@@ -146,22 +147,19 @@ function(                 Domplate,             MetaObject,      connection) {
     templates.message = Domplate.domplate(templates.common, {
       tag: 
         DIV({'class':'overlay message', 'onclick':'$message|getClickAction'}, 
-          DIV({'class':'whileTrying'}, "$message|getOperation"),
-          DIV({'class':'serverMessage'}, "$message|getServerMessage"),
-          DIV({'class':'serverDetails'}, "$message|getServerDetails"),
+          TAG("$message|getMessageTag", {'message':'$message'}),
           DIV({'class':'centerButton'},
-             BUTTON({'class':'okButton'}, 'Ok')
+             BUTTON({'class':'okButton', 'onclick':'$message|getOkAction'}, 'Ok')
           )
         ),
-      getOperation: function(msg) {
-        return msg.operation || '';
+      
+      getOkAction: function() {
+        return function(event) {
+          var overlay = getAncestorByClassName(event.currentTarget, 'overlay');
+          this.getCloser(overlay).apply(this, []);
+        }.bind(this);
       },
-      getServerMessage: function(msg) {
-        return msg.Message || msg;
-      },
-      getServerDetails: function(msg) {
-        return msg.DetailedMessage || '';
-      },
+      
       getCloser: function(overlay) {
         return function() {
           if (overlay.parentElement) {
@@ -176,6 +174,26 @@ function(                 Domplate,             MetaObject,      connection) {
           closer.call();
         }
       }
+    });
+    
+    templates.serverMessage = Domplate.domplate(templates.message, {
+      messageTag: DIV({'class':'serverMessage'}, 
+             DIV({'class':'whileTrying'}, "$message|getOperation"),
+             DIV({'class':'serverMessage'}, "$message|getServerMessage"),
+             DIV({'class':'serverDetails'}, "$message|getServerDetails")
+           ),
+      getMessageTag: function() {
+        return this.messageTag;
+      },
+      getOperation: function(msg) {
+        return msg.operation || '';
+      },
+      getServerMessage: function(msg) {
+        return msg.Message || msg;
+      },
+      getServerDetails: function(msg) {
+        return msg.DetailedMessage || '';
+      },
     });
     
     templates.column = Domplate.domplate(templates.common, {
@@ -214,6 +232,29 @@ function(                 Domplate,             MetaObject,      connection) {
       }
     });
 
+    templates.blockMasterCommit = Domplate.domplate(templates.message, {
+       messageTag: DIV({'class':'blockMasterCommitMessage'}, 
+             DIV({'class':'question'}, "$message.message"),
+             A({'class':'alternative columnLink', 'onclick':'$message.alternative.action' }, 
+               "$message.alternative.message"
+             )
+           ),
+      getMessageTag: function() {
+        return this.messageTag;
+      },
+      getClickAction: function(message) {
+        return function(event) {
+          message.action.apply(this, [event]);
+          var elt = document.querySelector('.message');
+          if (elt) {
+            var closer = this.getCloser(elt);
+            closer.call();
+          }
+        }
+      }
+
+    });
+
     templates.status = Domplate.domplate(templates.column, {
       tag: A({'id':'$project|getElementId', 'class':"columnLink columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
@@ -227,25 +268,42 @@ function(                 Domplate,             MetaObject,      connection) {
         return  function(event) {
           var status = event.currentTarget.getAttribute('gitStatus');
           if (project.onBranch.name === 'master' && status !== this.ok) {
-            if ( window.confirm("On branch master. Change branch before commit?") ) {
-              var row = event.currentTarget.parentElement;
-              var branchElt = row.getElementsByClassName('branch')[0];
-              click(branchElt);
-              return;
-            }
-          }
-          var gitapi = project.StatusLocation.indexOf('/gitapi/');
-          if (gitapi !== -1) {
-            // eg http://localhost:8080/git/git-status.html#/gitapi/status/file/E/
-            var statusURL = project.StatusLocation.substr(0, gitapi);
-            statusURL += '/git/git-status.html#';
-            statusURL += project.StatusLocation.substr(gitapi);
-            window.open(statusURL);
-            // When the user comes back to this tab, update this project view
-            updateQueue.push(templates.project.update.bind(templates.project, project));
+            var row = event.currentTarget.parentElement;
+            var branchElt = row.getElementsByClassName('branch')[0];
+            templates.blockMasterCommit.tag.insertAfter({
+                message: {
+                  message: "On branch master. Change branch before commit?",
+                  action:  click.bind(this, branchElt),
+                  alternative: { 
+                    message: "No, let me commit",
+                    action: this.openGitStatus.bind(this, project)
+                  }
+                }
+              }, 
+            row);
           } else {
-            console.error("Malformed StatusLocation for "+project.Name, project);
+            this.openGitStatus(project);
           }
+        }.bind(this);
+      },
+      
+      openGitStatus: function(project, event) {
+        var gitapi = project.StatusLocation.indexOf('/gitapi/');
+        if (gitapi !== -1) {
+          // eg http://localhost:8080/git/git-status.html#/gitapi/status/file/E/
+          var statusURL = project.StatusLocation.substr(0, gitapi);
+          statusURL += '/git/git-status.html#';
+          statusURL += project.StatusLocation.substr(gitapi);
+          window.open(statusURL);
+          // When the user comes back to this tab, close the overlay
+          var overlay = getAncestorByClassName(event.currentTarget, 'overlay');
+          updateQueue.push(templates.blockMasterCommit.getCloser(overlay));
+          // and update this project view
+          updateQueue.push(templates.project.update.bind(templates.project, project));
+          // Don't trigger the enclosing action
+          event.stopPropagation();
+        } else {
+          console.error("Malformed StatusLocation for "+project.Name, project);
         }
       },
       
@@ -357,10 +415,10 @@ function(                 Domplate,             MetaObject,      connection) {
         console.error("branch \'"+name+"\' operation failed "+status, jsonObj);
         jsonObj.operation = 'branch \''+name+'\' operation:';
         var row = this.getElement(project);
-        var overlay = templates.message.tag.insertAfter({message: jsonObj}, row);
+        var overlay = templates.serverMessage.tag.insertAfter({message: jsonObj}, row);
         // move the overlay on below of the current project
         overlay.style.top = (row.offsetTop + row.offsetHeight) +'px';
-        grabClicks(templates.message.getCloser(overlay));
+        grabClicks(templates.serverMessage.getCloser(overlay));
       },
       
       checkoutBranch: function(project, name) {
@@ -645,7 +703,7 @@ function(                 Domplate,             MetaObject,      connection) {
         
     templates.overview = Domplate.domplate({
           tag: DIV({'id':'opView'},
-            H1("Git Project Manager"),
+            H1("Orchard Project Manager"),
             TAG(templates.projects.tag, {projects: "$projects"})
           ),
         });
