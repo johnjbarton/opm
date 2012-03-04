@@ -1,7 +1,8 @@
 body {
     font-family:Verdana,Geneva,sans-serif;
-    background-color: #DAD0D0;
-    color: #472E2E /* a dark brown */
+    /* http://colorschemedesigner.com/#1R61T3jII--wV */
+    background-color: #FFFFEB;
+    color: #4D3F00 /* a dark brown */
 }
 
 
@@ -51,11 +52,11 @@ div.opmProjectHeader {
 }
 
 div.managedProject:nth-child(odd) {
-  background-color: #D5FFCE;
+  background-color: #F5FBE7;
 }
 
 div.managedProject:nth-child(even) {
-  background-color: #C7FFBE;
+  background-color: #F6FBED;
 }
 
 div.managedProject {
@@ -87,13 +88,13 @@ div.opmProjectFooter {
 }
 
 .columnLink[gitStatus='gitWarn'] {
-  color: #9500FF; 
+  color: #9C00FF; 
 }
 .columnLink[gitStatus='gitErr'] {
   color: red;
 }
 .columnLink[gitStatus='gitOk'] {
-  color: #7A7A7A;  
+  color: #807E79;  
 }
 .columnCell {
   display: table-cell;
@@ -121,7 +122,7 @@ div.opmProjectFooter {
 .overlay {
   position: absolute;
   z-index: 10;
-  background-color: #70C462;
+  background-color: #F6FBED;
   border: gray 1px solid;
 }
 .taskBusy {
@@ -131,7 +132,7 @@ div.opmProjectFooter {
 .overlay input {
   border: 2px #A67CC5 inset; 
   padding: 1px;
-  background-color: #70C462;
+  background-color: #F6FBED;
 }
 .input .overlay {
   border: none;
@@ -156,26 +157,26 @@ div.opmProjectFooter {
 }
 .branches {
   z-index: 10;
-  background-color: #70C462;
+  background-color: #F6FBED;
   border: gray 1px solid;
   position: absolute;
 }
 .branchesContainer {
-  background-color: #70C462;
+  background-color: #F6FBED;
   padding: 4px;
 }
 .branches .branchName {
   border: 1px solid transparent;   
 }
 .branches .branchStartPoint {
-  color: #7A7A7A;
+  color: #F5FBE7;
 }
 .branches input {
-  background-color: #70C462;
+  background-color: #F6FBED;
 }
 .branches input:focus {
-  border: 2px  #7A7A7A inset;
-  color: #7A7A7A;
+  border: 2px  #F5FBE7 inset;
+  color: #F5FBE7;
   outline-color: #D5FFCE; /* lighter of the n-th child colors */
 }
 
@@ -183,7 +184,7 @@ div.opmProjectFooter {
   content: 'hint ';
 }
 .hint {
-  color:  #7A7A7A;
+  color:  #F5FBE7;
 }
 
 .message {
