@@ -83,15 +83,10 @@ function(                 Domplate,             MetaObject,      connection) {
     },
     
     render: function() {
-      this._renderDomplate(this.getManagedProjects(), this.getUnmanagedProjects());
-    },
-    
-    _renderDomplate: function(managed, unmanaged) {
       var body = window.document.body;
       templates.overview.tag.append({
-        projects: managed,
+        projectView: this
       }, body);
-      templates.addMore.update(this);
     },
     
   });
@@ -149,7 +144,7 @@ function(                 Domplate,             MetaObject,      connection) {
         DIV({'class':'overlay message', 'onclick':'$message|getClickAction'}, 
           TAG("$message|getMessageTag", {'message':'$message'}),
           DIV({'class':'centerButton'},
-             BUTTON({'class':'okButton', 'onclick':'$message|getOkAction'}, 'Ok')
+             BUTTON({'class':'okButton centerable', 'onclick':'$message|getOkAction'}, 'Ok')
           )
         ),
       
@@ -209,7 +204,7 @@ function(                 Domplate,             MetaObject,      connection) {
     });
     
     templates.projectName = Domplate.domplate(templates.column, {
-      tag: SPAN({
+      tag: TD({
                   'id':'$project|getElementId', 
                   'class':'projectName columnCell columnLink',  
                   'title':'$project|getTitle', 
@@ -258,9 +253,11 @@ function(                 Domplate,             MetaObject,      connection) {
     });
 
     templates.status = Domplate.domplate(templates.column, {
-      tag: A({'id':'$project|getElementId', 'class':"columnLink columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: TD(
+             A({'id':'$project|getElementId', 'class':"columnLink columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
-         ),
+             )
+           ),
 
       getColumnName: function() {
         return 'status';
@@ -460,7 +457,7 @@ function(                 Domplate,             MetaObject,      connection) {
     
     templates.branch = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: DIV({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: TD({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
              INPUT({'class':'checkboxSpacer', 'type':'checkbox', 'checked':'checked'}),
              SPAN({'class':'branchName'}, "$project|getCellContent"),
              INPUT({'class':'checkboxSpacer', 'type':'checkbox', 'checked':'checked'})
@@ -510,7 +507,7 @@ function(                 Domplate,             MetaObject,      connection) {
     });
 
     templates.push = Domplate.domplate(templates.column, {
-      tag: DIV({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnButton columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: TD({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnButton columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
              '&#x21a6;'
          ),
       getTitle: function(project) {
@@ -529,7 +526,7 @@ function(                 Domplate,             MetaObject,      connection) {
 
     templates.pull = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: DIV({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnButton columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: TD({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnButton columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
              '&#x21a4;'
          ),
       getTitle: function(project) {
@@ -578,9 +575,11 @@ function(                 Domplate,             MetaObject,      connection) {
 
     templates.remote = Domplate.domplate(templates.column, {
       // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
-      tag: A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
+      tag: TD(
+             A({'id':'$project|getElementId', 'class':"columnLink $project|getColumnName", 'onclick':"$project|getColumnAction"},
               "$project|getCellContent"
-         ),
+             )
+           ),
       getColumnName: function() {
         return 'remote';
       },
@@ -614,7 +613,7 @@ function(                 Domplate,             MetaObject,      connection) {
     });
     
     templates.unmanage = Domplate.domplate(templates.column, {
-      tag: SPAN(
+      tag: TD(
           {
             'id':'$project|getElementId',  
             'title':'$project|getTitle',
@@ -650,7 +649,7 @@ function(                 Domplate,             MetaObject,      connection) {
     });
 
     templates.project = Domplate.domplate({
-      tag: DIV({'class': 'opmProject managedProject',  _project: '$project'},
+      tag: TR({'class': 'opmProject managedProject',  _project: '$project'},
              TAG(templates.projectName.tag, {project: "$project"}),
              TAG(templates.branch.tag, {project: "$project"}),
              TAG(templates.status.tag, {project: "$project"}),
@@ -672,22 +671,124 @@ function(                 Domplate,             MetaObject,      connection) {
 
     });
 
+    templates.addMore = Domplate.domplate({
+      tag: TD({'class': 'addMore', 
+               'colspan':'7',
+               'onclick':'$projectView|expandUnmanaged', 
+               'onkeydown': '$installIfEnter', 
+               _projectView: "$projectView"
+             },
+             DIV({'class':'siteTitle textAnnotate'}, 
+               A({'class':'centerable'}, "&#x21DF; add projects")
+             )
+           ),
+      installIfEnter: function(event) {
+        if (event.which === 13) {
+          templates.unmanagedProjects.addProject(event);
+        }
+      },
+      
+      expandUnmanaged: function(projectView) {
+        return function(event) {
+          var elt = event.currentTarget;
+          var site = getAncestorByClassName(elt, 'projectsTable');
+          var overlay = templates.unmanagedProjects.tag.insertAfter({projectView: projectView}, site);
+        }
+      }
+
+    });
+        
+     templates.unmanagedProjects = Domplate.domplate({
+       tag: DIV({'class':'unmanagedProjects'},
+              FOR('project', '$projectView|getUnmanagedProjects', 
+                DIV({'class': 'opmProject unmanaged', _siteModel: '$projectView|getSiteModel'},
+                  SPAN({'class':'arrow-box', 'onclick': '$addProject', 'title': "$project|getTooltip"},
+                    SPAN({'class':'unicode-arrow-up-from-bar'}, '&#x21a5;')
+                  ),
+                  SPAN({'class': 'projectName', _repObject: '$project'}, "$project|getName")
+                )
+              )
+            ),
+          
+      getName: function(project) {
+        return project.Name;
+      },
+      
+      getUnmanagedProjects: function(projectView) {
+        return projectView.getUnmanagedProjects();
+      },
+      
+      getSiteModel: function(projectView) {
+        return projectView.siteModel;
+      },
+      
+      getTooltip: function(project) {
+        return "Add project\'"+project.Name + "\' to managed projects";
+      },
+      
+      addProject: function(event) {
+        var projectElement = event.target.parentElement.nextElementSibling;
+        var projectName = projectElement.innerText;
+        console.log("adding "+projectName);
+        var project = projectElement.repObject;
+        var siteElement = projectElement.parentElement;
+        var siteModel = siteElement.siteModel;
+        siteModel.addProject(project).then(
+          function afterAddProject(event) {
+            siteElement.classList.add('hidden');
+            var projects = document.querySelector('.projectsTable');
+            templates.project.tag.append({project: project}, projects);
+          },
+          function errorAddProject(event) {
+            console.error(event);
+          }
+        );
+      },
+      
+      update: function(projectView) {
+        //TODO sites
+        var addMore = window.document.querySelector('.addMore');
+        if (addMore) {
+          if (!projectView) {
+            projectView = addMore.projectView;
+          }
+          addMore.parentElement.removeChild(addMore);
+        }
+        this.tag.append({projectView: projectView},  window.document.body );
+      }
+    });
+
+
     templates.projects = Domplate.domplate({
-          tag: DIV({'id':'opProjects'},
-            H2("Managed Projects"),
-            DIV({'class':'opmProjectHeader'}, 
-               SPAN('Project'),
-               SPAN('Branch'),
-               SPAN('git Status'),
-               SPAN('Pull'),
-               SPAN('Push'),
-               SPAN('Remote'),
-               SPAN('')
-            ),               
-            FOR('project', '$projects',
-              TAG(templates.project.tag, {project: '$project'})
-            )
+          tag: 
+            TABLE({'class':'projectsTable textAttend'},
+              TBODY(
+                TR({'class': 'addMoreRow siteTitle textAnnotate'}, 
+                  TD({'colspan':'7'},
+                    A({'class':'centerable'}, "Managed Projects")
+                  )
+                ),
+                TR({'class':'opmProjectHeader textAnnotate'}, 
+                  TD('Project'),
+                  TD('Branch'),
+                  TD('git Status'),
+                  TD('Pull'),
+                  TD('Push'),
+                  TD('Remote'),
+                 TD('')
+               ),
+               FOR('project', '$projectView|getManagedProjects',
+                 TAG(templates.project.tag, {project: '$project'})
+               ),
+               TR({'class': 'addMoreRow'}, 
+                 TAG(templates.addMore.tag, {'projectView':'$projectView'})
+               )
+             )
           ),
+          
+          getManagedProjects: function(projectView) {
+            return projectView.getManagedProjects();
+          }
         });
     
     templates.task = Domplate.domplate({
@@ -711,73 +812,11 @@ function(                 Domplate,             MetaObject,      connection) {
         
     templates.overview = Domplate.domplate({
           tag: DIV({'id':'opView'},
-            H1("Orchard Project Manager"),
-            TAG(templates.projects.tag, {projects: "$projects"})
+            DIV({'class':'pageTitle textAnnotate'}, "Orchard Project Manager"),
+            TAG(templates.projects.tag, {projectView: "$projectView"})
           ),
         });
         
-    templates.addMore = Domplate.domplate({
-      tag: DIV({'id': 'addMore','onkeydown': '$installIfEnter', _projectView: "$projectView"},
-           H2("Manage More Projects"),
-           FOR('project', '$projects', 
-              DIV({'class': 'opmProject unmanaged', _siteModel: '$siteModel'},
-                SPAN({'class':'arrow-box', 'onclick': '$addProject', 'title': "$project|getTooltip"},
-                  SPAN({'class':'unicode-arrow-up-from-bar'}, '&#x21a5;')
-                ),
-                SPAN({'class': 'projectName', _repObject: '$project'}, "$project|getName")
-              )
-            )
-          ),
-          
-      getName: function(project) {
-        return project.Name;
-      },
-      
-      getTooltip: function(project) {
-        return "Add project\'"+project.Name + "\' to managed projects";
-      },
-      
-      addProject: function(event) {
-        var projectElement = event.target.parentElement.nextElementSibling;
-        var projectName = projectElement.innerText;
-        console.log("adding "+projectName);
-        var project = projectElement.repObject;
-        var siteElement = projectElement.parentElement;
-        var siteModel = siteElement.siteModel;
-        siteModel.addProject(project).then(
-          function afterAddProject(event) {
-            siteElement.classList.add('hidden');
-            var projects = document.querySelector('#opProjects');
-            templates.project.tag.append({project: project}, projects);
-          },
-          function errorAddProject(event) {
-            console.error(event);
-          }
-        );
-      },
-      
-      installIfEnter: function(event) {
-        if (event.which === 13) {
-          this.installProject(event);
-        }
-      },
-      
-      update: function(projectView) {
-        var addMore = window.document.querySelector('#addMore');
-        if (addMore) {
-          if (!projectView) {
-            projectView = addMore.projectView;
-          }
-          addMore.parentElement.removeChild(addMore);
-        }
-        this.tag.append({
-          projectView: projectView,
-          projects: projectView.getUnmanagedProjects(),
-          siteModel: projectView.siteModel
-        },  window.document.body );
-
-      }
-  });
 }
 
   return ProjectsView;
