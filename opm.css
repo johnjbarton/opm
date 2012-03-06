@@ -45,8 +45,12 @@ body {
   display: none !important;
 }
 
-.unmanaged {
-  margin-left: 4ex;
+.opView {
+  position: relative; /* allow unmanaged */
+}
+.unmanagedProjects {
+  position: absolute;
+    
 }
 
 .arrow-box {
@@ -61,7 +65,7 @@ body {
 }
 
 .projectsTable {
-  margin: 1.5em;
+  margin: 2.0em 1.5em 0 1.5em; /* no margin on bottom to allow add projects drop down */
   cursor: default;
   color: black; /* to get the table body text to standout */
   border-collapse: separate;
@@ -220,4 +224,14 @@ body {
 .okButton {
   padding: 10px; /*bigger button to hit*/
   border-radius: 5px;
+}
+.menuButton {
+  padding-right: 0.3ex;
+}
+.menuButton:hover {
+  font-weight: bold;
+}
+.menuOpen {
+  border: 1px solid gray;
+  font-weight: bold;
 }

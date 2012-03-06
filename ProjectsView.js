@@ -674,12 +674,12 @@ function(                 Domplate,             MetaObject,      connection) {
     templates.addMore = Domplate.domplate({
       tag: TD({'class': 'addMore', 
                'colspan':'7',
-               'onclick':'$projectView|expandUnmanaged', 
+               'onclick':'$projectView|toggleUnmanaged', 
                'onkeydown': '$installIfEnter', 
                _projectView: "$projectView"
              },
              DIV({'class':'siteTitle textAnnotate'}, 
-               A({'class':'centerable'}, "&#x21DF; add projects")
+               A({'class':'centerable menuButton'}, "&#x21DF; add projects")
              )
            ),
       installIfEnter: function(event) {
@@ -688,14 +688,38 @@ function(                 Domplate,             MetaObject,      connection) {
         }
       },
       
-      expandUnmanaged: function(projectView) {
+      toggleUnmanaged: function(projectView) {
         return function(event) {
-          var elt = event.currentTarget;
-          var site = getAncestorByClassName(elt, 'projectsTable');
-          var overlay = templates.unmanagedProjects.tag.insertAfter({projectView: projectView}, site);
+          var unmanagedProjects = document.querySelector('.unmanagedProjects');
+          if (unmanagedProjects) {
+            this.closeUnmanaged(event, unmanagedProjects);
+          } else {
+            this.openUnmanaged(event, projectView);
+          }
+        }.bind(this);
+      },  
+        
+      openUnmanaged: function(event, projectView) {    
+        var elt = event.currentTarget;
+        var addButton = elt.getElementsByClassName('centerable')[0];
+        var site = getAncestorByClassName(elt, 'projectsTable');
+        var overlay = templates.unmanagedProjects.tag.insertAfter({projectView: projectView}, site);
+        var left = addButton.offsetLeft;
+        var parent = addButton.parentElement;
+        while (parent && parent !== overlay.parentElement) {
+          left += parent.offsetLeft;
+          parent = parent.parentElement;
         }
-      }
-
+        overlay.style.left = left +'px';
+        addButton.classList.add('menuOpen');
+      },
+      
+      closeUnmanaged: function(event, overlay) {
+        overlay.parentElement.removeChild(overlay);
+        var elt = event.currentTarget;
+        var addButton = elt.getElementsByClassName('centerable')[0];
+        addButton.classList.remove('menuOpen');
+      },
     });
         
      templates.unmanagedProjects = Domplate.domplate({
