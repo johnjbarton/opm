@@ -1,6 +1,6 @@
 body {
     font-family:Verdana,Geneva,sans-serif;
-    /* http://colorschemedesigner.com/#1R61T3jII--wV */
+    /* http://colorschemedesigner.com/#1R61T3jII--wVbFZ--cGcRa */
     background-color: #FFFFF1;
     color: #4D3F00; /* a dark brown */
 }
@@ -46,7 +46,7 @@ body {
 }
 
 .opView {
-  position: relative; /* allow unmanaged */
+  position: relative; /* allow unmanaged menu absolute*/
 }
 .unmanagedProjects {
   position: absolute;
@@ -54,14 +54,20 @@ body {
 }
 
 .arrow-box {
-  margin-left: 2.4ex;
+  margin-left: 1ex;
   position: relative;
   left: -1ex;
   cursor: default;
 }
 
-.arrow-box:hover {
-    border: gray 1px solid;
+.unmanaged {
+  padding-right: 0.3ex;
+  border: transparent 1px solid;
+}
+
+.unmanaged:hover {
+  cursor: default;
+  border: gray 1px solid;
 }
 
 .projectsTable {
@@ -83,11 +89,11 @@ body {
 }
 
 .managedProject:nth-child(odd) {
-  background-color: #F5FBE7;
+  background-color: #B8D389;
 }
 
 .managedProject:nth-child(even) {
-  background-color: #F6FBED;
+  background-color: #DFFF95;
 }
 
 .managedProject {

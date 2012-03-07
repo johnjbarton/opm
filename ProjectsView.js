@@ -632,14 +632,14 @@ function(                 Domplate,             MetaObject,      connection) {
       
       getColumnAction: function(project) {
         return function(event) {
-          var unmanagedProjectElement = window.document.querySelector(".unmanaged");
-          var siteModel = unmanagedProjectElement.siteModel;
           var row = event.target.parentElement;
+          var projectTable = getAncestorByClassName(row, 'projectsTable');
+          var projectView = projectTable.projectView;
+          var siteModel = projectView.siteModel;
           siteModel.removeProject(project).then(
             function() {
               row.classList.add('hidden');
-              templates.addMore.update();
-              },
+            },
             function() {
               console.error("unmanage fails ", arguments);
             }
@@ -678,7 +678,7 @@ function(                 Domplate,             MetaObject,      connection) {
                'onkeydown': '$installIfEnter', 
                _projectView: "$projectView"
              },
-             DIV({'class':'siteTitle textAnnotate'}, 
+             DIV({'class':'siteTitle textAnnotate', 'title':'Click to open add-projects list'}, 
                A({'class':'centerable menuButton'}, "&#x21DF; add projects")
              )
            ),
@@ -703,7 +703,17 @@ function(                 Domplate,             MetaObject,      connection) {
         var elt = event.currentTarget;
         var addButton = elt.getElementsByClassName('centerable')[0];
         var site = getAncestorByClassName(elt, 'projectsTable');
-        var overlay = templates.unmanagedProjects.tag.insertAfter({projectView: projectView}, site);
+        var projectRows = site.querySelectorAll('.opmProject');
+        
+        var addProjectAfterRow;
+        if (projectRows.length) {
+          addProjectAfterRow = projectRows[projectRows.length - 1];
+        } else {
+          addProjectAfterRow = site.querySelector('.siteTitle');
+        }
+          
+        var args = {projectView: projectView, addProjectAfterRow: addProjectAfterRow};
+        var overlay = templates.unmanagedProjects.tag.insertAfter(args, site);
         var left = addButton.offsetLeft;
         var parent = addButton.parentElement;
         while (parent && parent !== overlay.parentElement) {
@@ -720,13 +730,14 @@ function(                 Domplate,             MetaObject,      connection) {
         var addButton = elt.getElementsByClassName('centerable')[0];
         addButton.classList.remove('menuOpen');
       },
+      
     });
         
      templates.unmanagedProjects = Domplate.domplate({
        tag: DIV({'class':'unmanagedProjects'},
               FOR('project', '$projectView|getUnmanagedProjects', 
-                DIV({'class': 'opmProject unmanaged', _siteModel: '$projectView|getSiteModel'},
-                  SPAN({'class':'arrow-box', 'onclick': '$addProject', 'title': "$project|getTooltip"},
+                DIV({'class': 'opmProject unmanaged', 'onclick': '$addProjectAfterRow|getAddProject', _siteModel: '$projectView|getSiteModel'},
+                  SPAN({'class':'arrow-box', 'title': "$project|getTooltip"},
                     SPAN({'class':'unicode-arrow-up-from-bar'}, '&#x21a5;')
                   ),
                   SPAN({'class': 'projectName', _repObject: '$project'}, "$project|getName")
@@ -750,8 +761,12 @@ function(                 Domplate,             MetaObject,      connection) {
         return "Add project\'"+project.Name + "\' to managed projects";
       },
       
-      addProject: function(event) {
-        var projectElement = event.target.parentElement.nextElementSibling;
+      getAddProject: function(afterRow) {
+        return this.addProject.bind(this, afterRow);
+      },
+      
+      addProject: function(afterRow, event) {
+        var projectElement = event.currentTarget.querySelector('.projectName');
         var projectName = projectElement.innerText;
         console.log("adding "+projectName);
         var project = projectElement.repObject;
@@ -760,8 +775,7 @@ function(                 Domplate,             MetaObject,      connection) {
         siteModel.addProject(project).then(
           function afterAddProject(event) {
             siteElement.classList.add('hidden');
-            var projects = document.querySelector('.projectsTable');
-            templates.project.tag.append({project: project}, projects);
+            templates.project.tag.insertRows({project: project}, afterRow);
           },
           function errorAddProject(event) {
             console.error(event);
@@ -785,7 +799,7 @@ function(                 Domplate,             MetaObject,      connection) {
 
     templates.projects = Domplate.domplate({
           tag: 
-            TABLE({'class':'projectsTable textAttend'},
+            TABLE({'class':'projectsTable textAttend', _projectView: '$projectView'},
               TBODY(
                 TR({'class': 'addMoreRow siteTitle textAnnotate'}, 
                   TD({'colspan':'7'},
