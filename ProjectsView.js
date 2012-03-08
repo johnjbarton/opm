@@ -342,20 +342,29 @@ function(                 Domplate,             MetaObject,      connection) {
     
     templates.branches = Domplate.domplate(templates.common, {
       tag: DIV({'class': 'branches'},
+             DIV({'class':'branchesTitle'}, 'Branches for outliner'),
              DIV({'class':'branchesContainer', 'onkeydown':"$project|getKeyDownAction"},
                FOR("branch", "$branches", 
-                 DIV({'onclick':"$project|getClickAction"},
-                   INPUT({'type':'checkbox', 'checkMe':"$branch|getSelected" }),
-                   SPAN({'class':'branchName'}, "$branch|getBranchName")
+                 TABLE({'class':'branchLog', 'onclick':"$project|getClickAction"},
+                   TBODY(
+                     TR( 
+                       TD(
+                         DIV({'class':'branchFrom branchName branchStartPoint'}, "set by setStartPoint"),
+                         INPUT({'class':'newBranchName', 'type':'text'})
+                       )
+                     ),
+                     TR(
+                       TD({'class':'branch columnCell'},
+                         INPUT({'type':'checkbox', 'checkMe':"$branch|getSelected" }),
+                         SPAN({'class':'branchName'}, "$branch|getBranchName"),
+                         INPUT({'type':'checkbox', 'class':'checkboxSpacer' })
+                       )
+                     )
+                   )
                  )
-              ),
-              DIV({'class':'input' },
-                 INPUT({'class':'newBranchName', 'type':'text'}),
-                 SPAN({'class':'branchFrom branchName branchStartPoint'}, "set by setStartPoint")
-               ),
-             DIV({'class':'hint'}, "$project|getHint") 
-         )
-      ),
+              )
+           )
+        ),
       
       getBranchName: function(branch) {
         return branch.name;
@@ -438,12 +447,23 @@ function(                 Domplate,             MetaObject,      connection) {
       
       renderUpdate: function(project, branches, elt) {
         var row = elt.parentElement;
-        var overlay = this.tag.append({project: project, branches: branches}, row.parentElement);
-        // move the overlay on top of the current project
-        overlay.style.top = (elt.offsetTop) +'px';
+        var projectsTable = getAncestorByClassName(row, 'projectsTable');
+        var overlay = this.tag.insertAfter({project: project, branches: branches}, projectsTable);
+        overlay.style.top = projectsTable.offsetTop +'px';
         // move the container over the project's current branch name
-        var branchName = row.getElementsByClassName('branchName')[0];
-        overlay.style.left = branchName.offsetLeft + 'px';
+        var branch = row.querySelector('.branch');
+        overlay.style.left = branch.offsetLeft + projectsTable.offsetLeft + 'px';
+        // size the branch name to match the current
+        var overlayBranchName = overlay.querySelector('.branch');
+        overlayBranchName.style.width = branch.offsetWidth + 'px';
+
+        // move the branch name in the overlay on top of the current project        
+        var branchLog = overlay.querySelector('.branchLog');
+        branchLog.style.top = elt.offsetTop +'px';
+        
+        overlay.style.height = projectsTable.offsetHeight +'px';
+        overlay.style.width = '500px';
+        
         overlay.getElementsByClassName('newBranchName')[0].focus();
         window.setTimeout( function() {
           // after the overlay comes up, watch for closing signs
@@ -849,7 +869,7 @@ function(                 Domplate,             MetaObject,      connection) {
 
         
     templates.overview = Domplate.domplate({
-          tag: DIV({'id':'opView'},
+          tag: DIV({'class':'opView'},
             DIV({'class':'pageTitle textAnnotate'}, "Orchard Project Manager"),
             TAG(templates.projects.tag, {projectView: "$projectView"})
           ),

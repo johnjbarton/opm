@@ -1,6 +1,5 @@
 body {
     font-family:Verdana,Geneva,sans-serif;
-    /* http://colorschemedesigner.com/#1R61T3jII--wVbFZ--cGcRa */
     background-color: #FFFFF1;
     color: #4D3F00; /* a dark brown */
 }
@@ -45,9 +44,6 @@ body {
   display: none !important;
 }
 
-.opView {
-  position: relative; /* allow unmanaged menu absolute*/
-}
 .unmanagedProjects {
   position: absolute;
     
@@ -73,9 +69,9 @@ body {
 .projectsTable {
   margin: 2.0em 1.5em 0 1.5em; /* no margin on bottom to allow add projects drop down */
   cursor: default;
-  color: black; /* to get the table body text to standout */
   border-collapse: separate;
   text-align: center;
+  position: relative;
 }
 
 .opmProjectHeader {
@@ -184,30 +180,31 @@ body {
   padding: 2px;
 }
 .branchFrom:before {
-  content: 'new branch from: ';
+  content: 'new from: ';
 }
 .branches {
   z-index: 10;
-  background-color: #F6FBED;
+  background-color: #CBE998;
   border: gray 1px solid;
   position: absolute;
 }
 .branchesContainer {
-  background-color: #F6FBED;
-  padding: 4px;
+  background-color: #CBE998;
+  color: #4D3F00;
+  position: relative;
+}
+.branchLog {
+  position: absolute;
 }
 .branches .branchName {
   border: 1px solid transparent;   
 }
-.branches .branchStartPoint {
-  color: #F5FBE7;
-}
 .branches input {
-  background-color: #F6FBED;
+  background-color: #CBE998;
 }
 .branches input:focus {
   border: 2px  #F5FBE7 inset;
-  color: #F5FBE7;
+  color: black;
   outline-color: #D5FFCE; /* lighter of the n-th child colors */
 }
 
