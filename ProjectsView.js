@@ -673,11 +673,6 @@ function(                 Domplate,             MetaObject,      connection,    
                A({'class':'centerable menuButton'}, "&#x21DF; add projects")
              )
            ),
-      installIfEnter: function(event) {
-        if (event.which === 13) {
-          templates.unmanagedProjects.addProject(event);
-        }
-      },
       
       toggleUnmanaged: function(projectView) {
         return function(event) {

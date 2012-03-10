@@ -44,14 +44,35 @@ function(                 Domplate,      connection,   ProjectsView,     Q,     
           dp.FOR('site', '$sites', 
             dp.SPAN({'class':'siteName', _repObject: '$site'}, '$site')
           ),
-          dp.INPUT({'class':'newSiteName', 'type':'text'}),
+          dp.INPUT({'class':'newSiteName', 'pattern':'\w*', 'onkeydown': '$sites|acceptEnter', 'type':'text'}),
           dp.SPAN({'class': 'newSiteHint', 'onclick':'$sites|getRefocus'}, 'New Orchard Name')
         ),
       getRefocus: function() {
         return function(event) {
           event.currentTarget.previousSibling.focus();
         };
+      },
+      acceptEnter: function(sites) {
+        return function(event) {
+          if (event.which === 13) {
+            var input = event.currentTarget.parentElement.querySelector('.newSiteName');
+            var name = input.value;
+            if (!name) {
+              return;  // ignore enter with no entry
+            } else {
+              if (sites.indexOf(name) !== -1) {
+                window.alert(name+' is already used');
+              } else {
+                window.alert("add site");
+              }
+            }
+          } else {
+            var hint = event.currentTarget.parentElement.querySelector('.newSiteHint');
+            hint.classList.add('hidden');
+          }
+        };
       }
+      
   });
         
   var opm = {

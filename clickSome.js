@@ -37,12 +37,21 @@ function() {
     }
   }
   
-
-
+  function ifEnterThen(event, thenCall, opt_elseCall) {
+    if (event.which === 13) {
+      thenCall.call(null, event);
+    } else {
+      if (opt_elseCall) {
+        opt_elseCall.call(null, event);
+      }
+    }
+  }
+  
   return {
     click: click,
     grabClicks: grabClicks,
-    getAncestorByClassName: getAncestorByClassName
+    getAncestorByClassName: getAncestorByClassName,
+    ifEnterThen: ifEnterThen
   };
 
 });
