@@ -24,6 +24,10 @@ body {
   margin-left: 1ex;
 }
 
+.opView {
+  position: relative;
+}
+
 .siteTitle { 
   font-weight: lighter;
   text-align: center;
@@ -237,4 +241,25 @@ body {
 .menuOpen {
   border: 1px solid gray;
   font-weight: bold;
+}
+/* after overlay input */
+input.newSiteName {
+  width: 20ex;
+  padding: 1px;
+  border: 2px #4D3F00 inset;
+  background-color: transparent;
+  z-index: 10;
+}
+input.newSiteName:focus {
+  
+}
+input.newSiteName:focus + .newSiteHint {
+  display: none;
+}
+.newSiteHint {
+  left: 1ex;
+  border: 2px transparent solid; /* Must match newSiteName */
+  padding: 1px;
+  position: absolute;
+  color: gray; 
 }

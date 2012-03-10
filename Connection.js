@@ -6,6 +6,9 @@
 define(['MetaObject/AJAX','ProjectsModel', 'SiteModel', 'q/q'], 
 function(           AJAX,  ProjectsModel,   SiteModel,     Q) {
 
+  var ourSpecialSitePrefix = "_opm_";
+
+
 
 function ajax(verb) {  
   // close over verb, eg GET
@@ -41,6 +44,7 @@ function ajax(verb) {
 }
 
 var Connection = {
+  siteModels: {},
 
   on: function(kind) {
     var method = this['on'+kind];
@@ -98,10 +102,16 @@ var Connection = {
     this.projectsModel = ProjectsModel.new(this, obj);
   },
     
-  onsite: function(obj) {
-    console.log("onSites ", obj);
-    this.siteModel = SiteModel.new(this, obj);
-    // need to return promise
+  onsite: function(jsonObj) {
+    console.log("onSites ", jsonObj);
+    if (jsonObj) {
+      jsonObj.SiteConfigurations.forEach(function(siteConfig) {
+        if (siteConfig.Name.indexOf(ourSpecialSitePrefix) === 0) {
+          var siteName = siteConfig.Name.substr(ourSpecialSitePrefix.length);
+          this.siteModels[siteName] = SiteModel.new(this, siteConfig);
+        }
+      }.bind(this));
+    }
   },
   
   put: function(path, obj) {

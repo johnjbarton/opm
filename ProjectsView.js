@@ -3,40 +3,12 @@
 
 /*global define console window */
 
-define(['lib/domplate/lib/domplate','MetaObject/MetaObject','opm/Connection'], 
-function(                 Domplate,             MetaObject,      connection) {
+define(['lib/domplate/lib/domplate','MetaObject/MetaObject','opm/Connection', 'opm/clickSome'], 
+function(                 Domplate,             MetaObject,      connection,       clickSome) {
 
-
-  function getAncestorByClassName(elt, className) {
-    var parent = elt.parentElement;
-    while(parent) {
-      if (parent.classList.contains(className)) {
-        return parent;
-      }
-      parent = parent.parentElement;
-    }
-  }
-  
-  function click(elt) {
-    var event = window.document.createEvent('MouseEvents');
-    event.initMouseEvent('click', true, true, window, 0,0,0,0,0, false, false, false, false, 0, null);
-    return elt.dispatchEvent(event);
-  }
-
-  function grabClicks(thenClose) {
-    function closeThenRemove(event) {
-       thenClose.apply(null, [event]);  
-       window.document.removeEventListener('click', closeThenRemove, false);
-       window.document.removeEventListener('keydown', closeOnEscape, false);
-    }
-    function closeOnEscape(event) {
-      if (event.which === 27) {  // escape
-        closeThenRemove(event);
-      }
-    }
-    window.document.addEventListener('click', closeThenRemove, false);
-    window.document.addEventListener('keydown', closeOnEscape, false);
-  }
+  var click = clickSome.click;
+  var grabClicks = clickSome.click;
+  var getAncestorByClassName = clickSome.getAncestorByClassName;
   
   var updateQueue = [];
   var hasFocus = true;
@@ -57,7 +29,8 @@ function(                 Domplate,             MetaObject,      connection) {
   
   var ProjectsView = MetaObject.extend({
     
-    initialize: function(projectsModel, siteModel) {
+    initialize: function(siteName, siteModel, projectsModel) {
+      this.siteName = siteName;
       this.projectsModel = projectsModel;
       this.siteModel = siteModel;
     },
@@ -83,11 +56,9 @@ function(                 Domplate,             MetaObject,      connection) {
     },
     
     render: function() {
-      var body = window.document.body;
-      templates.overview.tag.append({
-        projectView: this
-      }, body);
-    },
+      var elt = elt || window.document.body;
+      templates.projects.tag.append({projectView: this}, elt)
+    }
     
   });
 
@@ -866,15 +837,6 @@ function(                 Domplate,             MetaObject,      connection) {
 
     });
     
-
-        
-    templates.overview = Domplate.domplate({
-          tag: DIV({'class':'opView'},
-            DIV({'class':'pageTitle textAnnotate'}, "Orchard Project Manager"),
-            TAG(templates.projects.tag, {projectView: "$projectView"})
-          ),
-        });
-        
 }
 
   return ProjectsView;

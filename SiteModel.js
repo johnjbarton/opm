@@ -6,20 +6,12 @@
 define(['MetaObject/MetaObject', 'opm/Connection'], 
 function(           MetaObject,       connection) {
 
-  var ourSpecialSiteName = "opm";
 
   var SiteModel = MetaObject.extend({
   
-    initialize: function(connection, jsonObj) {
+    initialize: function(connection, siteConfig) {
       this.connection = connection;
-      this.site = {};
-      if (jsonObj) {
-        jsonObj.SiteConfigurations.forEach(function(siteConfig) {
-          if (siteConfig.Name === ourSpecialSiteName) {
-            this.site = siteConfig;
-          }
-        }.bind(this));
-      }
+      this.site = siteConfig;
     },
   
     getManagedProjectNames: function() {
