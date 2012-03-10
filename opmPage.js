@@ -19,8 +19,13 @@ function(                 Domplate,      connection,   ProjectsView,     Q,     
         dp.DIV({'class':'opView'},
           dp.SPAN({'class':'pageTitle textAnnotate'}, "Orchard Project Manager"),
           dp.SPAN({'class':'siteSelector', _sites:'$sites', onclick: '$sites|getOpenSiteMenu'},
-            '$selectedSite')
+            '$selectedSite|getSelectedSiteText')
         ),
+        
+      getSelectedSiteText: function(selectedSite) {
+        return selectedSite || 'No sites defined';
+      },
+      
       getOpenSiteMenu: function(sites) {
         return function(event) {
           var selectedSiteElt = event.currentTarget;
