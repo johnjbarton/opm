@@ -3,13 +3,13 @@
 
 /*global define console window*/
 
-define(['lib/domplate/lib/domplate', 'opm/Connection', 'ProjectsView', 'q/q', 'opm/clickSome'], 
-function(                 Domplate,      connection,   ProjectsView,     Q,        clickSome) {
+define(['lib/domplate/lib/domplate', 'opm/Connection', 'OrchardView', 'OrchardModel', 'q/q', 'opm/clickSome'], 
+function(                 Domplate,       connection,   OrchardView,   OrchardModel,     Q,        clickSome) {
 
   var click = clickSome.click;
   var grabClicks = clickSome.click;
   var getAncestorByClassName = clickSome.getAncestorByClassName;
-
+  var Controls = clickSome.Controls;
 
   var templates = {};
   var dp = Domplate.tags;
@@ -18,92 +18,124 @@ function(                 Domplate,      connection,   ProjectsView,     Q,     
       tag: 
         dp.DIV({'class':'opView'},
           dp.SPAN({'class':'pageTitle textAnnotate'}, "Orchard Project Manager"),
-          dp.SPAN({'class':'siteSelector', _sites:'$sites', onclick: '$sites|getOpenSiteMenu'},
-            '$selectedSite|getSelectedSiteText')
+          dp.SPAN({'class':'orchardSelector', _orchardManager:'$orchardManager', onclick: '$orchardManager|getOpenOrchardMenu'},
+            '$selectedOrchard|getSelectedOrchardText')
         ),
         
-      getSelectedSiteText: function(selectedSite) {
-        return selectedSite || 'No sites defined';
+      getSelectedOrchardText: function(selectedOrchard) {
+        return selectedOrchard || 'No sites defined';
       },
       
-      getOpenSiteMenu: function(sites) {
+      getOpenOrchardMenu: function(manager) {
         return function(event) {
-          var selectedSiteElt = event.currentTarget;
-          var siteSelector = templates.siteSelector.tag.insertAfter(
-            {sites: sites}, 
-            selectedSiteElt
+          var selectedOrchardElt = event.currentTarget;
+          var orchardSelector = templates.orchardSelector.tag.insertAfter(
+            {orchardManager: manager},
+            selectedOrchardElt
           );
-          siteSelector.style.left = selectedSiteElt.offsetLeft +'px';
-        };
+          orchardSelector.style.left = selectedOrchardElt.offsetLeft +'px';
+        }.bind(this);
       }
   });
   
-  templates.siteSelector = Domplate.domplate({
+  templates.orchardSelector = Domplate.domplate({
       tag: 
         dp.DIV({'class':'overlay'}, 
-          dp.FOR('site', '$sites', 
-            dp.SPAN({'class':'siteName', _repObject: '$site'}, '$site')
+          dp.FOR('orchardName', '$orchardManager|getOrchardNames', 
+            dp.DIV({'class':'orchardName', _repObject: '$orchardName'}, '$orchardName')
           ),
-          dp.INPUT({'class':'newSiteName', 'pattern':'\w*', 'onkeydown': '$sites|acceptEnter', 'type':'text'}),
-          dp.SPAN({'class': 'newSiteHint', 'onclick':'$sites|getRefocus'}, 'New Orchard Name')
+          dp.TAG(Controls.identifierInput.tag, {prompt: 'New Orchard Name', 'onInput': '$orchardManager|getAddSite'})
         ),
-      getRefocus: function() {
-        return function(event) {
-          event.currentTarget.previousSibling.focus();
-        };
-      },
-      acceptEnter: function(sites) {
-        return function(event) {
-          if (event.which === 13) {
-            var input = event.currentTarget.parentElement.querySelector('.newSiteName');
-            var name = input.value;
-            if (!name) {
-              return;  // ignore enter with no entry
-            } else {
-              if (sites.indexOf(name) !== -1) {
-                window.alert(name+' is already used');
-              } else {
-                window.alert("add site");
-              }
-            }
-          } else {
-            var hint = event.currentTarget.parentElement.querySelector('.newSiteHint');
-            hint.classList.add('hidden');
-          }
-        };
-      }
       
+      getOrchardNames: function(orchardManager) {
+        return orchardManager.getOrchardNames();
+      },
+      
+      getAddSite: function(orchardManager) {
+        return function(identifier) {
+          var orchards = orchardManager.getOrchardNames();
+          if (orchards.indexOf(identifier) !== -1) {
+            return identifier+' is already used';
+          } else {
+            this.addSite(identifier, orchardManager);
+          }
+        }.bind(this);
+      },
+      
+      addSite: function(identifier, orchardManager) {
+        identifier = OrchardModel.toOrchardIdentifier(identifier);
+        connection.postObject(
+          orchardManager.getCreateSiteURL(),
+          {
+            'Workspace' : connection.workspace.Id,
+            'Name': identifier
+          },
+          this.updateSiteList.bind(this),
+          this.updateFailed.bind(this, identifier)
+        );
+      },
+      
+      updateSiteList: function() {
+      },
+      
+      updateFailed: function(identifier) {
+        console.error('Could not create site '+identifier);
+      }
+    
+  });
+  
+  templates.sites = Domplate.domplate({
+    tag: 
+      dp.FOR('site', '$sites', 
+        dp.TAG(OrchardView.projects.tag, {site: '$site'})
+      )
   });
         
   var opm = {
     
     render: function(connection) {
-      console.log("render");
-      var siteNames = Object.keys(connection.siteModels);
-      var selectedSite = siteNames.pop() || '';
+      console.log("render", connection);
+      this.connection = connection; 
+      var orchardNames = Object.keys(this.orchardModels);
+      var selectedOrchard = orchardNames.pop() || '';
       var overview = templates.overview.tag.append(
-        {sites: siteNames, selectedSite: selectedSite}, 
+        {orchardManager: this, selectedOrchard: this.selectedOrchard}, 
         window.document.body
       );
-      var sites = siteNames.forEach(function(siteName) {
-        var siteModel = sites[siteName];
-        var opView = ProjectsView.new(siteName, siteModel, connection.projectsModel);
-        opView.render();
-      });
-      if (!selectedSite) {
+      if (!selectedOrchard) {
         window.setTimeout(function() {
-          var adder = overview.querySelector('.siteSelector');
+          var adder = overview.querySelector('.orchardSelector');
           click(adder);
         });
       }
 
     },
     
+    getOrchardNames: function() {
+      return Object.keys(this.orchardModels);
+    },
+    
+    getCreateSiteURL: function() {
+      return '/site';
+    },
+    
+    buildOrchardModels: function(thenCall) {
+      connection.load(function() {
+        connection.getSiteNames().forEach(function(siteName) {
+          this.orchardModels = {};
+          if (OrchardModel.isOrchardIdentifier(siteName)) {
+            var siteModel = connection.siteModels[siteName];
+            this.orchardModels[siteName] = OrchardModel.new(siteName, siteModel, connection.projectsModel);
+          }
+        }.bind(this));
+        thenCall.call(this, connection);
+      }.bind(this));
+    },
+    
     buildPage: function() {
-      connection.load(function(conection) {
-         opm.render(connection);
-      });
+      this.buildOrchardModels(this.render.bind(this));
     }
+    
   };
   
   return opm;

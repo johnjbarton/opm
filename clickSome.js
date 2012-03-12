@@ -3,8 +3,8 @@
 
 /*global define window console */
 
-define([], 
-function() {
+define(['lib/domplate/lib/domplate'], 
+function(                 Domplate) {
 
   function click(elt) {
     var event = window.document.createEvent('MouseEvents');
@@ -37,21 +37,65 @@ function() {
     }
   }
   
-  function ifEnterThen(event, thenCall, opt_elseCall) {
-    if (event.which === 13) {
-      thenCall.call(null, event);
-    } else {
-      if (opt_elseCall) {
-        opt_elseCall.call(null, event);
+  var Controls = {};
+  var dp = Domplate.tags;
+  
+  /* One word input control
+  ** @param: prompt string 
+  ** @param: onInput fn(identifier); return error string or false to accept
+  */
+  Controls.identifierInput = Domplate.domplate({
+    tag: 
+      dp.SPAN({'class':'identifierControl'},
+        dp.INPUT({'class':'identifierInput', 'pattern':'\w*', 'onkeydown': '$onInput|acceptEnter', 'type':'text'}),
+        dp.SPAN({'class': 'identifierPrompt', 'onclick':'$prompt|getRefocus'}, '$prompt')
+      ),
+ 
+      getRefocus: function() {
+        return function(event) {
+          event.currentTarget.previousSibling.focus();
+        };
+      },
+      
+      acceptEnter: function(onInput) {
+        return function(event) {
+          var input = event.currentTarget.parentElement.querySelector('.identifierInput');
+          if (event.which === 13) {
+            var identifier = input.value;
+            if (!identifier) {
+              return;  // ignore enter with no entry
+            } else {
+              var errorMessage = onInput(identifier);
+              if (errorMessage) {
+                window.alert(errorMessage);
+              } else {
+                // done for now
+                input.value = '';
+                this.showPrompt(input.parentElement, true);
+              }
+            }
+          } else {
+            this.showPrompt(input.parentElement, false);
+          }
+        }.bind(this);
+      },
+      
+      showPrompt: function(controlElement, on) {
+        var promptElement = controlElement.querySelector('.identifierPrompt');
+        if (on) {
+          promptElement.classList.remove('hidden');
+        } else {
+          promptElement.classList.add('hidden');
+        }
       }
-    }
-  }
+
+  });
   
   return {
+    Controls: Controls,
     click: click,
     grabClicks: grabClicks,
-    getAncestorByClassName: getAncestorByClassName,
-    ifEnterThen: ifEnterThen
+    getAncestorByClassName: getAncestorByClassName
   };
 
 });

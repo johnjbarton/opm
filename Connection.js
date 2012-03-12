@@ -6,10 +6,6 @@
 define(['MetaObject/AJAX','ProjectsModel', 'SiteModel', 'q/q'], 
 function(           AJAX,  ProjectsModel,   SiteModel,     Q) {
 
-  var ourSpecialSitePrefix = "_opm_";
-
-
-
 function ajax(verb) {  
   // close over verb, eg GET
   return function() {
@@ -63,9 +59,9 @@ var Connection = {
     }.bind(this);
   },
   
-  getObject: ajax('GET'),
-  putObject: ajax('PUT'),
-  postObject: ajax('POST'),
+  getObject: ajax('GET'),  // URL
+  putObject: ajax('PUT'),  // URL, body
+  postObject: ajax('POST'),// URL, body
   
   get: function(path, method, errMessage) {
     method = method || path;
@@ -78,23 +74,15 @@ var Connection = {
         this.onError(errMessage)
       );
   },
-    
-  load: function(fncOfConnection) {
-     return Q.all([
-       this.get('workspace'),
-       this.get('site')
-     ]).then(
-       fncOfConnection
-     );
-  },
-    
+
   onworkspace: function(obj) {
     console.log("onWorkspaces", obj);
     // only support one workspace
-    var workspace = obj.Workspaces[0];
+    this.workspace = obj.Workspaces[0];
+    var id = this.workspace.Id;
     // The workspace itself only lists 'projects', they don't seem interesting. 
-    var gitRootURL = "/gitapi/clone/workspace/"+workspace.Id;
-    return this.get(gitRootURL, 'gitRepos', 'git repositories in workspace '+workspace.Id);
+    var gitRootURL = '/gitapi/clone/workspace/' + id;
+    return this.get(gitRootURL, 'gitRepos', 'git repositories in workspace ' + id);
   },
       
   ongitRepos: function(obj) {
@@ -106,14 +94,25 @@ var Connection = {
     console.log("onSites ", jsonObj);
     if (jsonObj) {
       jsonObj.SiteConfigurations.forEach(function(siteConfig) {
-        if (siteConfig.Name.indexOf(ourSpecialSitePrefix) === 0) {
-          var siteName = siteConfig.Name.substr(ourSpecialSitePrefix.length);
-          this.siteModels[siteName] = SiteModel.new(this, siteConfig);
-        }
+        var siteName = siteConfig.Name;
+        this.siteModels[siteName] = SiteModel.new(this, siteConfig);
       }.bind(this));
     }
   },
   
+  getSiteNames: function() {
+    return Object.keys(this.siteModels);
+  },
+  
+  load: function(fncOfConnection) {
+     return Q.all([
+       this.get('workspace'),
+       this.get('site')
+     ]).then(
+       fncOfConnection
+     );
+  },
+
   put: function(path, obj) {
     var json = JSON.stringify(obj);
     return AJAX.promisePUT(path, json);

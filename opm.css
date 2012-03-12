@@ -154,6 +154,9 @@ body {
 .overlay {
   position: absolute;
   z-index: 10;
+}
+
+.someOldSelector {
   background-color: #F6FBED;
   border: gray 1px solid;
 }
@@ -161,11 +164,13 @@ body {
   border: none;
   padding: 4px 6px 4px 6px;
 }
+/*
 .overlay input {
   border: 2px #A67CC5 inset; 
   padding: 1px;
   background-color: #F6FBED;
 }
+*/
 .input .overlay {
   border: none;
   padding: 3px;  /* align with input */ 
@@ -244,22 +249,23 @@ body {
   font-weight: bold;
 }
 /* after overlay input */
-input.newSiteName {
-  width: 20ex;
+.identifierInput {
+  width: 19ex;
   padding: 1px;
-  border: 2px #4D3F00 inset;
+  padding-left: 1ex; 
+  border: 0 none;
   background-color: transparent;
+  border-radius: 10px;
   z-index: 10;
+  box-shadow: 0 0 6px #4D3F00;
 }
-input.newSiteName:focus {
-  
+.identifierInput:focus {
+  box-shadow: 0 0 12px #4D3F00;
+  outline: none;
 }
-input.newSiteName:focus + .newSiteHint {
-  display: none;
-}
-.newSiteHint {
+.identifierPrompt {
   left: 1ex;
-  border: 2px transparent solid; /* Must match newSiteName */
+  border: 2px transparent solid; /* Must match identifierInput */
   padding: 1px;
   position: absolute;
   color: gray; 

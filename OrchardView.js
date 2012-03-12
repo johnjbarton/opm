@@ -27,40 +27,6 @@ function(                 Domplate,             MetaObject,      connection,    
     hasFocus = false;
   });
   
-  var ProjectsView = MetaObject.extend({
-    
-    initialize: function(siteName, siteModel, projectsModel) {
-      this.siteName = siteName;
-      this.projectsModel = projectsModel;
-      this.siteModel = siteModel;
-    },
-    
-    getManagedProjects: function() {
-      var names = this.siteModel.getManagedProjectNames();
-      return names.map(function(name) {
-        return this.projectsModel.projects[name];
-      }.bind(this));
-    },
-    
-    getUnmanagedProjects: function() {
-      var names = this.siteModel.getManagedProjectNames();
-      var projectsByName = this.projectsModel.projects;
-      var unmanaged = [];
-      Object.keys(projectsByName).forEach(function(name) {
-        if (names.indexOf(name) === -1) { // not managed
-          var project = projectsByName[name];
-          unmanaged.push(project);
-        }
-      });
-      return unmanaged;
-    },
-    
-    render: function() {
-      var elt = elt || window.document.body;
-      templates.projects.tag.append({projectView: this}, elt)
-    }
-    
-  });
 
   with (Domplate.tags) {
 
@@ -834,5 +800,7 @@ function(                 Domplate,             MetaObject,      connection,    
     
 }
 
-  return ProjectsView;
+  var OrchardView = templates;
+  
+  return OrchardView;
 });
