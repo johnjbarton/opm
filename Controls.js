@@ -37,7 +37,11 @@ function(                 Domplate) {
     }
   }
   
-  var Controls = {};
+  var Controls = {
+    grabClicks: grabClicks,
+    getAncestorByClassName: getAncestorByClassName
+  };
+
   var dp = Domplate.tags;
   
   /* One word input control
@@ -91,11 +95,87 @@ function(                 Domplate) {
 
   });
   
-  return {
-    Controls: Controls,
-    click: click,
-    grabClicks: grabClicks,
-    getAncestorByClassName: getAncestorByClassName
-  };
+  Controls.identifierMenu = Domplate.domplate({
+    tag: dp.DIV({'class':'identifierMenu'},
+           dp.FOR('item', '$list|getItems', 
+             dp.DIV({'class': 'identifierMenuEntry', _repObject: '$item', 'onclick': '$list|getAction'},
+               dp.SPAN({'class':'arrow-box'},
+                 dp.SPAN({'class':'unicode-arrow-up-from-bar'}, '&#x21a5;')
+               ),
+               dp.SPAN({'class': 'identifierMenuItem'}, "$item")
+             )
+           ),
+           dp.TAG(Controls.identifierInput.tag, {prompt: '$list|getPrompt', onInput: '$list|getOnInput'})
+         ),
+    getItems: function(list) {
+      return list.getItems();
+    },
+      
+    getTooltip: function(list) {
+      return list.getTooltip();
+    },
+     
+    getAction: function(list) {
+      return list.getAction();
+    },
+    
+    getPrompt: function(list) {
+      return list.getPrompt();
+    },
+    
+    getOnInput: function(list) {
+      return list.getOnInput();
+    }
+  });
+  
+  Controls.identifierMenuOpener = Domplate.domplate({
+      tag: 
+        dp.DIV({'class':'identifierMenuOpener textAnnotate', 'onclick':'$list|toggleMenu', 'title':'Click to open menu'}, 
+          dp.A({'class':'centerable menuButton'}, '&#x21DF; '+'$list|getTitle')
+        ),
+      
+      getTitle: function(list) {
+        return list.getTitle();
+      },
+      
+      toggleMenu: function(list) {
+        return function(event) {
+          var menu = document.querySelector('.identifierMenu');
+          if (menu) {
+            this.closeMenu(event, list);
+          } else {
+            this.openMenu(event, list);
+          }
+        }.bind(this);
+      },  
+        
+      openMenu: function(event, list) {    
+        var elt = event.currentTarget;
+        
+        var addButton = elt.getElementsByClassName('centerable')[0];
+          
+        var overlay = Controls.identifierMenu.tag.insertAfter({list: list}, addButton);
+/*        var left = addButton.offsetLeft;
+        var parent = addButton.parentElement;
+        while (parent && parent !== overlay.parentElement) {
+          left += parent.offsetLeft;
+          parent = parent.parentElement;
+        }
+        overlay.style.left = left +'px';
+  */      addButton.classList.add('menuOpen');
+      },
+      
+      closeMenu: function(event, overlay) {
+        var elt = event.currentTarget;
+        var menu = elt.querySelector('.identifierMenu');
+        menu.parentElement.removeChild(menu);
+        var addButton = elt.getElementsByClassName('centerable')[0];
+        addButton.classList.remove('menuOpen');
+      }
+      
+    });
+
+  
+  return Controls;
 
 });

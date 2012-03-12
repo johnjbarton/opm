@@ -3,12 +3,11 @@
 
 /*global define console window */
 
-define(['lib/domplate/lib/domplate','MetaObject/MetaObject','opm/Connection', 'opm/clickSome'], 
-function(                 Domplate,             MetaObject,      connection,       clickSome) {
+define(['lib/domplate/lib/domplate','MetaObject/MetaObject','opm/Connection', 'opm/Controls'], 
+function(                 Domplate,             MetaObject,      connection,       Controls) {
 
-  var click = clickSome.click;
-  var grabClicks = clickSome.click;
-  var getAncestorByClassName = clickSome.getAncestorByClassName;
+  var click = Controls.click;
+  var getAncestorByClassName = Controls.getAncestorByClassName;
   
   var updateQueue = [];
   var hasFocus = true;
@@ -591,8 +590,8 @@ function(                 Domplate,             MetaObject,      connection,    
         return function(event) {
           var row = event.target.parentElement;
           var projectTable = getAncestorByClassName(row, 'projectsTable');
-          var projectView = projectTable.projectView;
-          var siteModel = projectView.siteModel;
+          var orchardModel = projectTable.orchardModel;
+          var siteModel = orchardModel.siteModel;
           siteModel.removeProject(project).then(
             function() {
               row.classList.add('hidden');
@@ -631,27 +630,26 @@ function(                 Domplate,             MetaObject,      connection,    
     templates.addMore = Domplate.domplate({
       tag: TD({'class': 'addMore', 
                'colspan':'7',
-               'onclick':'$projectView|toggleUnmanaged', 
-               'onkeydown': '$installIfEnter', 
-               _projectView: "$projectView"
+               'onclick':'$orchardModel|toggleUnmanaged', 
+               _orchardModel: "$orchardModel"
              },
              DIV({'class':'siteTitle textAnnotate', 'title':'Click to open add-projects list'}, 
                A({'class':'centerable menuButton'}, "&#x21DF; add projects")
              )
            ),
       
-      toggleUnmanaged: function(projectView) {
+      toggleUnmanaged: function(orchardModel) {
         return function(event) {
           var unmanagedProjects = document.querySelector('.unmanagedProjects');
           if (unmanagedProjects) {
             this.closeUnmanaged(event, unmanagedProjects);
           } else {
-            this.openUnmanaged(event, projectView);
+            this.openUnmanaged(event, orchardModel);
           }
         }.bind(this);
       },  
         
-      openUnmanaged: function(event, projectView) {    
+      openUnmanaged: function(event, orchardModel) {    
         var elt = event.currentTarget;
         var addButton = elt.getElementsByClassName('centerable')[0];
         var site = getAncestorByClassName(elt, 'projectsTable');
@@ -664,7 +662,7 @@ function(                 Domplate,             MetaObject,      connection,    
           addProjectAfterRow = site.querySelector('.siteTitle');
         }
           
-        var args = {projectView: projectView, addProjectAfterRow: addProjectAfterRow};
+        var args = {orchardModel: orchardModel, addProjectAfterRow: addProjectAfterRow};
         var overlay = templates.unmanagedProjects.tag.insertAfter(args, site);
         var left = addButton.offsetLeft;
         var parent = addButton.parentElement;
@@ -687,8 +685,8 @@ function(                 Domplate,             MetaObject,      connection,    
         
      templates.unmanagedProjects = Domplate.domplate({
        tag: DIV({'class':'unmanagedProjects'},
-              FOR('project', '$projectView|getUnmanagedProjects', 
-                DIV({'class': 'opmProject unmanaged', 'onclick': '$addProjectAfterRow|getAddProject', _siteModel: '$projectView|getSiteModel'},
+              FOR('project', '$orchardModel|getUnmanagedProjects', 
+                DIV({'class': 'opmProject unmanaged', 'onclick': '$addProjectAfterRow|getAddProject', _siteModel: '$orchardModel|getSiteModel'},
                   SPAN({'class':'arrow-box', 'title': "$project|getTooltip"},
                     SPAN({'class':'unicode-arrow-up-from-bar'}, '&#x21a5;')
                   ),
@@ -701,12 +699,12 @@ function(                 Domplate,             MetaObject,      connection,    
         return project.Name;
       },
       
-      getUnmanagedProjects: function(projectView) {
-        return projectView.getUnmanagedProjects();
+      getUnmanagedProjects: function(orchardModel) {
+        return orchardModel.getUnmanagedProjects();
       },
       
-      getSiteModel: function(projectView) {
-        return projectView.siteModel;
+      getSiteModel: function(orchardModel) {
+        return orchardModel.siteModel;
       },
       
       getTooltip: function(project) {
@@ -735,23 +733,23 @@ function(                 Domplate,             MetaObject,      connection,    
         );
       },
       
-      update: function(projectView) {
+      update: function(orchardModel) {
         //TODO sites
         var addMore = window.document.querySelector('.addMore');
         if (addMore) {
-          if (!projectView) {
-            projectView = addMore.projectView;
+          if (!orchardModel) {
+            orchardModel = addMore.orchardModel;
           }
           addMore.parentElement.removeChild(addMore);
         }
-        this.tag.append({projectView: projectView},  window.document.body );
+        this.tag.append({orchardModel: orchardModel},  window.document.body );
       }
     });
 
 
     templates.projects = Domplate.domplate({
           tag: 
-            TABLE({'class':'projectsTable textAttend', _projectView: '$projectView'},
+            TABLE({'class':'projectsTable textAttend', _orchardModel: '$orchardModel'},
               TBODY(
                 TR({'class': 'addMoreRow siteTitle textAnnotate'}, 
                   TD({'colspan':'7'},
@@ -767,17 +765,17 @@ function(                 Domplate,             MetaObject,      connection,    
                   TD('Remote'),
                  TD('')
                ),
-               FOR('project', '$projectView|getManagedProjects',
+               FOR('project', '$orchardModel|getManagedProjects',
                  TAG(templates.project.tag, {project: '$project'})
                ),
                TR({'class': 'addMoreRow'}, 
-                 TAG(templates.addMore.tag, {'projectView':'$projectView'})
+                 TAG(templates.addMore.tag, {'orchardModel':'$orchardModel'})
                )
              )
           ),
           
-          getManagedProjects: function(projectView) {
-            return projectView.getManagedProjects();
+          getManagedProjects: function(orchardModel) {
+            return orchardModel.getManagedProjects();
           }
         });
     

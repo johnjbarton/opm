@@ -3,27 +3,111 @@
 
 /*global define console window*/
 
-define(['lib/domplate/lib/domplate', 'opm/Connection', 'OrchardView', 'OrchardModel', 'q/q', 'opm/clickSome'], 
-function(                 Domplate,       connection,   OrchardView,   OrchardModel,     Q,        clickSome) {
+define(['lib/domplate/lib/domplate', 'opm/Connection', 'OrchardView', 'OrchardModel', 'q/q', 'opm/Controls'], 
+function(                 Domplate,       connection,   OrchardView,   OrchardModel,     Q,        Controls) {
 
-  var click = clickSome.click;
-  var grabClicks = clickSome.click;
-  var getAncestorByClassName = clickSome.getAncestorByClassName;
-  var Controls = clickSome.Controls;
+  var click = Controls.click;
+  var getAncestorByClassName = Controls.getAncestorByClassName;
 
   var templates = {};
   var dp = Domplate.tags;
 
+  templates.orchardSelector = Domplate.domplate({
+      tag: 
+        dp.SPAN({'class':'orchardSelector'}, 
+          dp.TAG(Controls.identifierMenuOpener.tag, {list: '$orchardManager|getOrchardNamesAsList'})
+        ),
+      
+      getOrchardNamesAsList: function(orchardManager) {
+        
+        return {
+          getItems: function() {
+            return orchardManager.getOrchardNames();
+          },
+          getAction: function() {
+            return templates.orchardSelector.getSelectOrchard(orchardManager);
+          },
+          getTitle: function() {
+            return orchardManager.getSelectedOrchardName();
+          },
+          getPrompt: function() {
+            return 'New Orchard Name';
+          },
+          getOnInput: function() {
+            return templates.orchardSelector.getAddOrchard(orchardManager);
+          }
+        };
+      },
+      
+      getOrchardNames: function(orchardManager) {
+        return orchardManager.getOrchardNames();
+      },
+      
+      getSelectOrchard: function(orchardManager) {
+        return function(event) {
+          var orchardName = event.currentTarget.repObject;
+          var orchardModel = orchardManager.orchardModels[orchardName];
+          this.selectOrchard(orchardModel);
+        }.bind(this);
+      },
+      
+      selectOrchard: function(orchardModel) {
+        var orchardElt = window.document.querySelector('.selectedOrchard');
+        var orchardHolderElt = orchardElt ? orchardElt.parentElement : null;
+        if (orchardHolderElt) {
+          orchardHolderElt.removeChild(orchardElt);
+        } else {
+          orchardHolderElt = window.document.body;
+        }
+        templates.orchard.tag.append({orchardModel: orchardModel}, orchardHolderElt);
+      },
+      
+      getAddOrchard: function(orchardManager) {
+        return function(identifier) {
+          var orchards = orchardManager.getOrchardNames();
+          if (orchards.indexOf(identifier) !== -1) {
+            return identifier+' is already used';
+          } else {
+            this.addOrchard(identifier, orchardManager);
+          }
+        }.bind(this);
+      },
+      
+      addOrchard: function(identifier, orchardManager) {
+        identifier = OrchardModel.toOrchardIdentifier(identifier);
+        connection.postObject(
+          orchardManager.getCreateSiteURL(),
+          {
+            'Workspace' : connection.workspace.Id,
+            'Name': identifier
+          },
+          this.selectOrchard.bind(this, identifier),
+          this.updateFailed.bind(this, identifier)
+        );
+      },
+      
+      updateFailed: function(identifier) {
+        console.error('Could not create site '+identifier);
+      }
+    
+  });
+  
+  templates.orchard = Domplate.domplate({
+    tag: 
+      dp.DIV({'class':'selectedOrchard'},
+         dp.TAG(OrchardView.projects.tag, {orchardModel: '$orchardModel'})
+      )
+  });
+        
   templates.overview = Domplate.domplate({
       tag: 
         dp.DIV({'class':'opView'},
           dp.SPAN({'class':'pageTitle textAnnotate'}, "Orchard Project Manager"),
-          dp.SPAN({'class':'orchardSelector', _orchardManager:'$orchardManager', onclick: '$orchardManager|getOpenOrchardMenu'},
-            '$selectedOrchard|getSelectedOrchardText')
+          dp.TAG(templates.orchardSelector.tag, {orchardManager: '$orchardManager'})
         ),
         
-      getSelectedOrchardText: function(selectedOrchard) {
-        return selectedOrchard || 'No sites defined';
+      getSelectedOrchardText: function(selectedOrchardName) {
+        return selectedOrchardName || 'No orchards defined';
       },
       
       getOpenOrchardMenu: function(manager) {
@@ -38,81 +122,39 @@ function(                 Domplate,       connection,   OrchardView,   OrchardMo
       }
   });
   
-  templates.orchardSelector = Domplate.domplate({
-      tag: 
-        dp.DIV({'class':'overlay'}, 
-          dp.FOR('orchardName', '$orchardManager|getOrchardNames', 
-            dp.DIV({'class':'orchardName', _repObject: '$orchardName'}, '$orchardName')
-          ),
-          dp.TAG(Controls.identifierInput.tag, {prompt: 'New Orchard Name', 'onInput': '$orchardManager|getAddSite'})
-        ),
-      
-      getOrchardNames: function(orchardManager) {
-        return orchardManager.getOrchardNames();
-      },
-      
-      getAddSite: function(orchardManager) {
-        return function(identifier) {
-          var orchards = orchardManager.getOrchardNames();
-          if (orchards.indexOf(identifier) !== -1) {
-            return identifier+' is already used';
-          } else {
-            this.addSite(identifier, orchardManager);
-          }
-        }.bind(this);
-      },
-      
-      addSite: function(identifier, orchardManager) {
-        identifier = OrchardModel.toOrchardIdentifier(identifier);
-        connection.postObject(
-          orchardManager.getCreateSiteURL(),
-          {
-            'Workspace' : connection.workspace.Id,
-            'Name': identifier
-          },
-          this.updateSiteList.bind(this),
-          this.updateFailed.bind(this, identifier)
-        );
-      },
-      
-      updateSiteList: function() {
-      },
-      
-      updateFailed: function(identifier) {
-        console.error('Could not create site '+identifier);
-      }
-    
-  });
-  
-  templates.sites = Domplate.domplate({
-    tag: 
-      dp.FOR('site', '$sites', 
-        dp.TAG(OrchardView.projects.tag, {site: '$site'})
-      )
-  });
-        
   var opm = {
     
     render: function(connection) {
       console.log("render", connection);
       this.connection = connection; 
       var orchardNames = Object.keys(this.orchardModels);
-      var selectedOrchard = orchardNames.pop() || '';
+      var selectedName = this.getSelectedOrchardName();
       var overview = templates.overview.tag.append(
-        {orchardManager: this, selectedOrchard: this.selectedOrchard}, 
+        {orchardManager: this, selectedOrchardName: selectedName}, 
         window.document.body
       );
-      if (!selectedOrchard) {
+      if (!selectedName) {
         window.setTimeout(function() {
           var adder = overview.querySelector('.orchardSelector');
           click(adder);
         });
+      } else {
+        var selectedOrchard = this.orchardModels[selectedName];
+        templates.orchardSelector.selectOrchard(selectedOrchard);
       }
-
     },
     
     getOrchardNames: function() {
       return Object.keys(this.orchardModels);
+    },
+    
+    getSelectedOrchardName: function() {
+      var names = this.getOrchardNames();
+      if (names.length) {
+        return names[names.length - 1];
+      } else {
+        return '';
+      }
     },
     
     getCreateSiteURL: function() {
@@ -121,8 +163,8 @@ function(                 Domplate,       connection,   OrchardView,   OrchardMo
     
     buildOrchardModels: function(thenCall) {
       connection.load(function() {
+        this.orchardModels = {};
         connection.getSiteNames().forEach(function(siteName) {
-          this.orchardModels = {};
           if (OrchardModel.isOrchardIdentifier(siteName)) {
             var siteModel = connection.siteModels[siteName];
             this.orchardModels[siteName] = OrchardModel.new(siteName, siteModel, connection.projectsModel);

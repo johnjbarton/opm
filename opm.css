@@ -239,6 +239,7 @@ body {
   border-radius: 5px;
 }
 .menuButton {
+  cursor: default;
   padding-right: 0.3ex;
 }
 .menuButton:hover {
@@ -269,4 +270,14 @@ body {
   padding: 1px;
   position: absolute;
   color: gray; 
+}
+.identifierMenuOpener {
+  position: relative;
+  display: inline;
+}
+.identifierMenu {
+  position: absolute;
+}
+.orchardSelector {
+  font-size: 1.3em;
 }
