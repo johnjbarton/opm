@@ -86,7 +86,7 @@ function(                 Domplate,             MetaObject,      connection,    
       
       getOkAction: function() {
         return function(event) {
-          var overlay = getAncestorByClassName(event.currentTarget, 'overlay');
+          var overlay = Controls.getAncestorByClassName(event.currentTarget, 'overlay');
           this.getCloser(overlay).apply(this, []);
         }.bind(this);
       },
@@ -99,10 +99,11 @@ function(                 Domplate,             MetaObject,      connection,    
         }
       },
       getClickAction: function() {
-        return function() {
-          var elt = document.querySelector('.message');
-          var closer = this.getCloser(elt);
-          closer.call();
+        return function(event) {
+          var elt = event.currentTarget;
+          if (elt.parentElement) {
+            elt.parentElement.removeChild(elt);
+          }
         }
       }
     });
@@ -231,7 +232,7 @@ function(                 Domplate,             MetaObject,      connection,    
           statusURL += project.StatusLocation.substr(gitapi);
           window.open(statusURL);
           // When the user comes back to this tab, close the overlay
-          var overlay = getAncestorByClassName(event.currentTarget, 'overlay');
+          var overlay = Controls.getAncestorByClassName(event.currentTarget, 'overlay');
           updateQueue.push(templates.blockMasterCommit.getCloser(overlay));
           // and update this project view
           updateQueue.push(templates.project.update.bind(templates.project, project));
@@ -276,31 +277,62 @@ function(                 Domplate,             MetaObject,      connection,    
 
     });
     
-    templates.branches = Domplate.domplate(templates.common, {
-      tag: DIV({'class': 'branches'},
-             DIV({'class':'branchesTitle'}, 'Branches for outliner'),
-             DIV({'class':'branchesContainer', 'onkeydown':"$project|getKeyDownAction"},
-               FOR("branch", "$branches", 
-                 TABLE({'class':'branchLog', 'onclick':"$project|getClickAction"},
-                   TBODY(
-                     TR( 
-                       TD(
-                         DIV({'class':'branchFrom branchName branchStartPoint'}, "set by setStartPoint"),
-                         INPUT({'class':'newBranchName', 'type':'text'})
-                       )
-                     ),
+/*                     
                      TR(
-                       TD({'class':'branch columnCell'},
+                       TD({'class':'branch columnCell','onclick':"$project|getClickAction"},
                          INPUT({'type':'checkbox', 'checkMe':"$branch|getSelected" }),
                          SPAN({'class':'branchName'}, "$branch|getBranchName"),
                          INPUT({'type':'checkbox', 'class':'checkboxSpacer' })
                        )
                      )
                    )
+*/
+
+    templates.branches = Domplate.domplate(templates.common, {
+      tag: DIV({'class': 'branches'},
+             DIV({'class':'siteTitle'}, 
+               SPAN({'class':'centerable'}, '$project|getCaption')
+             ),
+             DIV({'class':'branchesContainer', 'onkeydown':"$project|getKeyDownAction"},
+               TABLE({'class':'commitByBranch'},
+                 TBODY(
+                   FOR('commit', '$project|getCommits', 
+                     TR({'class':'commitRow'},
+                       FOR('branchCommit', '$commit|getBranchCommit',
+                         TD({'class':'branchCommit'}, '$branchCommit|getCommitInfo') 
+                       )
+                     )
+                   )
                  )
-              )
-           )
-        ),
+               )
+             )
+          ),
+      
+      getCaption: function(project) {
+        return project.Name;
+      },
+      
+      getCommits: function(project) {
+        return project.commits;
+      },
+      
+      getBranchCommit: function(commit) {
+        var commitMatrix = commit.project.commitMatrix;
+        return Object.keys(commitMatrix).map(function(branchName) {
+            return {
+              name: branchName, 
+              commit: commitMatrix[branchName][commit.logIndex] 
+            };
+        });
+      },
+      
+      getCommitInfo: function(branchCommit) {
+        var msg = branchCommit.commit ? branchCommit.commit.Message : '';
+        if (msg.length > 25) {
+          msg = msg.substr(0, 21) + '...';
+        }
+        return msg;
+      },
       
       getBranchName: function(branch) {
         return branch.name;
@@ -313,6 +345,13 @@ function(                 Domplate,             MetaObject,      connection,    
            head += '&#126;'+countBackwards;
         }
         branchFrom.innerHTML = branchName + head;
+      },
+      
+      getFocusAction: function() {
+        return function(event) {
+          event.currentTarget.querySelector('.newBranchName').focus();
+          event.stopPropagation();
+        }
       },
       
       setSelectedCheckbox: function(branch) {
@@ -362,7 +401,7 @@ function(                 Domplate,             MetaObject,      connection,    
         var overlay = templates.serverMessage.tag.insertAfter({message: jsonObj}, row);
         // move the overlay on below of the current project
         overlay.style.top = (row.offsetTop + row.offsetHeight) +'px';
-        grabClicks(templates.serverMessage.getCloser(overlay));
+        Controls.grabClicks(templates.serverMessage.getCloser(overlay));
       },
       
       checkoutBranch: function(project, name) {
@@ -376,14 +415,14 @@ function(                 Domplate,             MetaObject,      connection,    
         if (childElt.classList.contains('branches') ) {
           var overlay = childElt;
         } else {
-          var overlay = getAncestorByClassName(childElt, 'branches');
+          var overlay = Controls.getAncestorByClassName(childElt, 'branches');
         }
         overlay.parentElement.removeChild(overlay);
       },
       
       renderUpdate: function(project, branches, elt) {
         var row = elt.parentElement;
-        var projectsTable = getAncestorByClassName(row, 'projectsTable');
+        var projectsTable = Controls.getAncestorByClassName(row, 'projectsTable');
         var overlay = this.tag.insertAfter({project: project, branches: branches}, projectsTable);
         overlay.style.top = projectsTable.offsetTop +'px';
         // move the container over the project's current branch name
@@ -403,7 +442,7 @@ function(                 Domplate,             MetaObject,      connection,    
         overlay.getElementsByClassName('newBranchName')[0].focus();
         window.setTimeout( function() {
           // after the overlay comes up, watch for closing signs
-          grabClicks(this.closeOverlay.bind(this, overlay));
+          Controls.grabClicks(this.closeOverlay.bind(this, overlay));
         }.bind(this));
       },
       getHint: function () {
@@ -437,6 +476,7 @@ function(                 Domplate,             MetaObject,      connection,    
       
       update: function(project) {
         connection.getObject(project.BranchLocation, this.renderUpdate.bind(this, project), this.updateFailed.bind(this, project));
+        this.updateCommitLog(project);
       },
       
       renderUpdate: function(project, jsonObj) {
@@ -459,6 +499,57 @@ function(                 Domplate,             MetaObject,      connection,    
         });
         project.branches = branches;
       },
+      
+      walkParents: function(commitsById, commit, branchColumn) {
+        var index = commit.logIndex;
+        branchColumn[index] = commit;
+        var parents = commit.Parents;
+        if (parents) {
+          parents.forEach(function(parent) {
+            var parentCommit = commitsById[parent.Name];
+            this.walkParents(commitsById, parentCommit, branchColumn);
+          }.bind(this));
+        }
+      },
+      
+      buildCommitMatrix: function(project, commits) {
+        project.commitMatrix = {};
+        project.commits = commits;
+        var commitsById = {};
+        var branches = {};
+        commits.forEach(function(commit, index) {
+            commitsById[commit.Name] = commit;
+            commit.logIndex = index;
+            commit.project = project;
+            if (commit.Branches) {
+               commit.Branches.forEach(function(branch) {
+                   if (branch.FullName.indexOf('refs/heads/') === 0) {
+                     branches[branch.FullName] = index;
+                   }
+               });
+            }
+        });
+        Object.keys(branches).forEach(function(branch) {
+            var index = branches[branch];
+            var start = commits[index];
+            project.commitMatrix[branch] = [];
+            this.walkParents(commitsById, start, project.commitMatrix[branch]);      
+        }.bind(this));
+        console.log(project.Name+' commit matrix ', project.commitMatrix);
+      },
+      
+      updateCommitLog: function(project) {
+        connection.getObject(project.HeadLocation+'?parts=log', 
+            function success(jsonObj) {
+              if (jsonObj.Children) {
+                this.buildCommitMatrix(project, jsonObj.Children);
+              }
+            }.bind(this),
+            function fail() {
+              console.error('branch HeadLocation', arguments); 
+            }
+          );
+      }
 
     });
 
@@ -510,7 +601,7 @@ function(                 Domplate,             MetaObject,      connection,    
         }
       },
       update: function(project, elt, taskObj) {
-        var projectElt = getAncestorByClassName(elt, 'managedProject');
+        var projectElt = Controls.getAncestorByClassName(elt, 'managedProject');
         var projectWidth = projectElt.clientWidth +'px';
         var busyElt = templates.task.tag.insertAfter({project:project, taskObj: taskObj}, projectElt.previousSibling);
         busyElt.firstChild.style.width = projectWidth;
@@ -589,7 +680,7 @@ function(                 Domplate,             MetaObject,      connection,    
       getColumnAction: function(project) {
         return function(event) {
           var row = event.target.parentElement;
-          var projectTable = getAncestorByClassName(row, 'projectsTable');
+          var projectTable = Controls.getAncestorByClassName(row, 'projectsTable');
           var orchardModel = projectTable.orchardModel;
           var siteModel = orchardModel.siteModel;
           siteModel.removeProject(project).then(
@@ -652,7 +743,7 @@ function(                 Domplate,             MetaObject,      connection,    
       openUnmanaged: function(event, orchardModel) {    
         var elt = event.currentTarget;
         var addButton = elt.getElementsByClassName('centerable')[0];
-        var site = getAncestorByClassName(elt, 'projectsTable');
+        var site = Controls.getAncestorByClassName(elt, 'projectsTable');
         var projectRows = site.querySelectorAll('.opmProject');
         
         var addProjectAfterRow;
