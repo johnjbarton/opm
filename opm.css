@@ -240,13 +240,13 @@ body {
 }
 .menuButton {
   cursor: default;
-  padding: 8px;
+  padding: 2px;
 }
 .menuButton:hover {
   font-weight: bold;
 }
 .menuOpen {
-  border: 4px solid gray;
+  border: 2px solid gray;
   border-radius: 8px;
   font-weight: bold;
 }
