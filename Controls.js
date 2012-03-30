@@ -58,6 +58,7 @@ function(                 Domplate) {
       getRefocus: function() {
         return function(event) {
           event.currentTarget.previousSibling.focus();
+          event.stopPropagation();
         };
       },
       

@@ -1,7 +1,7 @@
 // Google BSD license http://code.google.com/google_bsd_license.html
 // Copyright 2011 Google Inc. johnjbarton@google.com
 
-/*global define console */
+/*global define console window*/
 
 define(['MetaObject/AJAX','ProjectsModel', 'SiteModel', 'q/q'], 
 function(           AJAX,  ProjectsModel,   SiteModel,     Q) {
@@ -17,15 +17,37 @@ function ajax(verb) {
       var json = JSON.stringify(obj);
       args.push(json);
     }
-    args.push(function jsonToObject(event) {
+    function jsonToObject(isRetry, event) {
       try {
         var status = event.currentTarget.status;
         var response = event.currentTarget.response;
         var jsonObj = {};
         if (response) {
           jsonObj = JSON.parse(response);
+          if (isRetry) {
+            console.log("Retry "+status, jsonObj);
+            if (jsonObj.Result) {
+              if (status !== 200) {
+                console.error("Retry gives Result but not 200 "+isRetry, event);
+              } else {
+                console.log("Retry gives 200 "+jsonObj.Id, event);
+              }
+              jsonObj = jsonObj.Result.JsonData;
+              successCallback.apply(null, [jsonObj]);
+              return;
+            }
+          }
         }
-        if (status >= 200 && status < 300) {
+        if (isRetry || (status === 202 && jsonObj))  {
+          if (jsonObj.Result) {
+            console.error("Result but 202, "+isRetry, event);
+          } 
+          // http://wiki.eclipse.org/Orion/Server_API#Progress_reporting
+          window.setTimeout(function() {
+            console.log("retry "+jsonObj.Location, event);
+            AJAX.GET(jsonObj.Location, jsonToObject.bind(null, true), errCallback); 
+          }, 100);
+        } else if (status === 200) {
           successCallback.apply(null, [jsonObj]);
         } else {
           errCallback.apply(null, [status, jsonObj]);
@@ -33,7 +55,9 @@ function ajax(verb) {
       } catch(exc) {
         errCallback.apply(null, [exc]);
       }    
-    });
+    }
+    // AJAX callback
+    args.push(jsonToObject.bind(null, false));
     args.push(errCallback);
     return AJAX[verb].apply(null, args); 
   };

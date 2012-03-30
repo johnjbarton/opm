@@ -82,12 +82,14 @@ function(                 Domplate,       connection,   OrchardView,   OrchardMo
             'Name': identifier
           },
           this.selectOrchard.bind(this, identifier),
-          this.updateFailed.bind(this, identifier)
+          function(exc) {
+            this.updateFailed(identifier, exc);
+          }
         );
       },
       
-      updateFailed: function(identifier) {
-        console.error('Could not create site '+identifier);
+      updateFailed: function(identifier, exc) {
+        console.error('Could not create site '+identifier+': '+exc, exc);
       }
     
   });

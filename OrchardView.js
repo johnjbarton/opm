@@ -298,8 +298,8 @@ function(                 Domplate,             MetaObject,      connection,    
                  TBODY(
                    FOR('commit', '$project|getCommits', 
                      TR({'class':'commitRow'},
-                       FOR('branchCommit', '$commit|getBranchCommit',
-                         TD({'class':'branchCommit'}, '$branchCommit|getCommitInfo') 
+                       FOR('branch', '$project|getBranches',
+                         TD({'class':'branchCommit'}, '$commit,$branch|getCommitInfo') 
                        )
                      )
                    )
@@ -312,22 +312,40 @@ function(                 Domplate,             MetaObject,      connection,    
         return project.Name;
       },
       
+      // Merged across branches and sorted by time stamp
       getCommits: function(project) {
-        return project.commits;
-      },
-      
-      getBranchCommit: function(commit) {
-        var commitMatrix = commit.project.commitMatrix;
-        return Object.keys(commitMatrix).map(function(branchName) {
-            return {
-              name: branchName, 
-              commit: commitMatrix[branchName][commit.logIndex] 
-            };
+        var commits = [];
+        project.branches.forEach(function(branch) {
+          if (branch.commitsSinceMaster) {
+            branch.commitsSinceMaster.forEach(function(commit) {
+              commit.onBranch = branch;
+              commits.push(commit); 
+            });
+          }
+          if (branch.masterCommitsSince) {
+            branch.masterCommitsSince.forEach(function(commit) {
+              commit.onBranch = branch;
+              commits.push(commit); 
+            });
+          }
         });
+        
+        var commitsByTime = commits.sort(function(lhs, rhs) {
+          return lhs.Time < rhs.Time;
+        });
+        
+        return commitsByTime;
       },
       
-      getCommitInfo: function(branchCommit) {
-        var msg = branchCommit.commit ? branchCommit.commit.Message : '';
+      getBranches: function(project) {
+	    return project.branches;
+      },
+      
+      getCommitInfo: function(commit, branch) {
+        if (commit.onBranch !== branch) {
+          return '';
+        }
+        var msg = commit.Message || '';
         if (msg.length > 25) {
           msg = msg.substr(0, 21) + '...';
         }
@@ -451,7 +469,6 @@ function(                 Domplate,             MetaObject,      connection,    
     });
     
     templates.branch = Domplate.domplate(templates.column, {
-      // This tag is the same in all templates derived from column, but domplate inheritance fails somehow
       tag: TD({'id':'$project|getElementId', 'title':'$project|getTitle', 'class':"columnLink  columnCell $project|getColumnName", 'onclick':"$project|getColumnAction"},
              INPUT({'class':'checkboxSpacer', 'type':'checkbox', 'checked':'checked'}),
              SPAN({'class':'branchName'}, "$project|getCellContent"),
@@ -476,7 +493,6 @@ function(                 Domplate,             MetaObject,      connection,    
       
       update: function(project) {
         connection.getObject(project.BranchLocation, this.renderUpdate.bind(this, project), this.updateFailed.bind(this, project));
-        this.updateCommitLog(project);
       },
       
       renderUpdate: function(project, jsonObj) {
@@ -496,7 +512,12 @@ function(                 Domplate,             MetaObject,      connection,    
             branchName.innerHTML = child.Name;
             project.onBranch = branch;
           }
-        });
+          if (branch.name === 'master') {
+            this.updateMasterCommits(project, branch);
+          } else { 
+            this.updateBranchCommits(project, branch);
+          }
+        }.bind(this));
         project.branches = branches;
       },
       
@@ -529,8 +550,10 @@ function(                 Domplate,             MetaObject,      connection,    
                });
             }
         });
+        // We have all the commits by SHA, each marked with their index into commits
+        // and a side table of branches by name giving index of branch commit.
         Object.keys(branches).forEach(function(branch) {
-            var index = branches[branch];
+            var index = branches[branch]; // start at the branch point
             var start = commits[index];
             project.commitMatrix[branch] = [];
             this.walkParents(commitsById, start, project.commitMatrix[branch]);      
@@ -538,17 +561,46 @@ function(                 Domplate,             MetaObject,      connection,    
         console.log(project.Name+' commit matrix ', project.commitMatrix);
       },
       
-      updateCommitLog: function(project) {
-        connection.getObject(project.HeadLocation+'?parts=log', 
-            function success(jsonObj) {
-              if (jsonObj.Children) {
-                this.buildCommitMatrix(project, jsonObj.Children);
-              }
-            }.bind(this),
-            function fail() {
-              console.error('branch HeadLocation', arguments); 
-            }
-          );
+      gitCommitsURL: function(project, revision) {
+        return project.CommitLocation.replace('/commit/','/commit/'+revision+'/'); 
+      },
+
+      updateBranchCommits: function(project, branch) {
+        this.updateCommits(project, branch, branch.name+'..master', 'masterCommitsSince');
+        this.updateCommits(project, branch, 'master..'+branch.name, 'commitsSinceMaster');
+      },
+      
+      updateCommits: function(project, branch, range, property) {
+        return connection.getObject(
+          this.gitCommitsURL(project, range),
+          function success(jsonObj) {
+            branch[property] = jsonObj.Children;
+            console.log(jsonObj.Children.length+' '+range, jsonObj);
+          }.bind(this),
+          function fail() {
+            console.error('update commits FAIL '+range, arguments); 
+          }
+        );
+      },
+
+      updateMasterCommits: function(project, branch) {
+        function success(jsonObj) {
+          branch.commits = jsonObj.Childern;
+          console.log(jsonObj.Children.length+" master~4 commits", jsonObj);
+        }
+        function fail(status, jsonObj) {
+          if (status === 400 && jsonObj.Message === 'Failed to generate commit log for ref master~4') {
+            // Then we probably have < 4 commits on master
+            connection.getObject(this.gitCommitsURL(project, 'master'), success, fail);
+          } else {
+            console.error('updateMasterCommits FAIL', arguments); 
+          }
+        }
+        connection.getObject(
+          this.gitCommitsURL(project, 'master~4..master'), 
+          success,
+          fail.bind(this)
+        );
       }
 
     });
@@ -712,7 +764,8 @@ function(                 Domplate,             MetaObject,      connection,    
       
       update: function(project) {
         var oldElt = templates.common.getElement(project);
-        this.tag.insertAfter({project: project}, oldElt);
+        // need to use insertRow because the context for the frag in insertAfter
+        this.tag.insertRow({project: project}, oldElt);
         oldElt.parentElement.removeChild(oldElt);
       },
 
