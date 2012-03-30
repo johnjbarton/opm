@@ -1,7 +1,7 @@
 // Google BSD license http://code.google.com/google_bsd_license.html
 // Copyright 2011 Google Inc. johnjbarton@google.com
 
-/*global define console window */
+/*global define document console window */
 
 define(['lib/domplate/lib/domplate','MetaObject/MetaObject','opm/Connection', 'opm/Controls'], 
 function(                 Domplate,             MetaObject,      connection,       Controls) {
@@ -135,7 +135,7 @@ function(                 Domplate,             MetaObject,      connection,    
       },
       
       updateFailed: function(project, err) {
-        console.error("Update "+this.getColumnName()+" on "+project.Name+" FAILED "+err, err.stack);
+        console.error("Update "+this.getColumnName()+" on "+project.Name+" FAILED "+err, err);
         return err;
       },
     });
